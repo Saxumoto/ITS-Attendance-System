@@ -2,7 +2,7 @@ import customtkinter as ctk
 import sqlite3
 from datetime import datetime
 import os
-import sys  # <--- NEEDED FOR PATH FIX
+import sys
 import csv
 import winsound
 from tkinter import filedialog, messagebox, ttk
@@ -23,20 +23,15 @@ class AttendanceApp(ctk.CTk):
         self.geometry("1280x800")
         self.minsize(1000, 650)
         
-        # --- 1. SMART PATH SETUP (THE FIX) ---
-        # This ensures the app finds files whether it's a script or an .exe
+        # --- PATH SETUP ---
         if getattr(sys, 'frozen', False):
-            # If running as .exe, look in the same folder as the executable
             self.app_dir = os.path.dirname(sys.executable)
         else:
-            # If running as script, look in the script's folder
             self.app_dir = os.path.dirname(os.path.abspath(__file__))
 
-        # Set paths for DB and Icon
         self.db_name = os.path.join(self.app_dir, 'StudentDatabase.db')
         icon_path = os.path.join(self.app_dir, 'logo.ico')
 
-        # Set Window Icon
         try:
             self.iconbitmap(icon_path)
         except:
@@ -52,18 +47,14 @@ class AttendanceApp(ctk.CTk):
         self.sidebar = ctk.CTkFrame(self, width=300, corner_radius=0, 
                                     fg_color=("#F0F0F0", "#212121")) 
         self.sidebar.grid(row=0, column=0, sticky="nsew")
-        self.sidebar.grid_rowconfigure(11, weight=1)
+        self.sidebar.grid_rowconfigure(12, weight=1) # Pushes content up
 
         # HEADER
         self.header_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         self.header_frame.grid(row=0, column=0, pady=(20, 10), padx=20, sticky="ew")
         
-        # Load Images Safely
         try:
-            # Check internal temp folder first (for bundled images), then external
-            # (PyInstaller unpacks images to sys._MEIPASS)
             base_path = sys._MEIPASS if getattr(sys, 'frozen', False) else self.app_dir
-            
             logo_path = os.path.join(base_path, "logo.png")
             logo_img = ctk.CTkImage(light_image=Image.open(logo_path),
                                     dark_image=Image.open(logo_path),
@@ -87,11 +78,15 @@ class AttendanceApp(ctk.CTk):
         self.add_sidebar_label("ACTIVE DATE", row=1)
         self.cal_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         self.cal_frame.grid(row=2, column=0, padx=25, sticky="ew")
+        
+        # Auto-Refresh on Date Change
         self.date_picker = DateEntry(self.cal_frame, width=12, background=THEME_COLOR,
                                      foreground='white', borderwidth=0, date_pattern='y-mm-dd',
                                      font=("Arial", 12))
         self.date_picker.pack(fill="x", ipady=3)
+        self.date_picker.bind("<<DateEntrySelected>>", lambda e: self.refresh_table())
 
+        # Load Button
         self.btn_load = ctk.CTkButton(self.sidebar, text="↻ Refresh Data", command=self.refresh_table, 
                                       height=28, fg_color=("#E0E0E0", "#444"), text_color=("black", "white"), hover_color=("#D0D0D0", "#555"))
         self.btn_load.grid(row=3, column=0, padx=25, pady=(10, 10), sticky="ew")
@@ -100,6 +95,7 @@ class AttendanceApp(ctk.CTk):
         self.entry_event = ctk.CTkEntry(self.sidebar, height=28, fg_color=("white", "#333"), text_color=("black", "white"), border_color=("#CCC", "#555"))
         self.entry_event.grid(row=5, column=0, padx=25, sticky="ew")
         self.entry_event.insert(0, "General Event")
+        self.entry_event.bind("<Return>", lambda e: self.refresh_table())
 
         self.add_sidebar_label("CUT-OFF TIME", row=6)
         self.time_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
@@ -118,12 +114,17 @@ class AttendanceApp(ctk.CTk):
 
         self.btn_export = ctk.CTkButton(self.sidebar, text="⬇ Export Excel", command=self.export_data, 
                                         fg_color=THEME_COLOR, text_color="white", hover_color="#C08B28", font=("Arial", 13, "bold"))
-        self.btn_export.grid(row=10, column=0, padx=25, pady=20, sticky="ew")
+        self.btn_export.grid(row=10, column=0, padx=25, pady=(20, 10), sticky="ew")
 
-        # 3. LIVE STATS CARD (Auto-Resizing)
+        # Reset Button
+        self.btn_reset = ctk.CTkButton(self.sidebar, text="✖ Clear Log", command=self.reset_log, 
+                                       height=28, fg_color="#C0392B", hover_color="#E74C3C", text_color="white")
+        self.btn_reset.grid(row=11, column=0, padx=25, pady=(0, 20), sticky="ew")
+
+        # 3. LIVE STATS CARD
         self.stats_frame = ctk.CTkFrame(self.sidebar, fg_color=("white", "#1a1a1a"), 
                                         corner_radius=10, border_color=("#DDD", "#333"), border_width=1)
-        self.stats_frame.grid(row=11, column=0, padx=20, pady=(0, 20), sticky="ew") 
+        self.stats_frame.grid(row=13, column=0, padx=20, pady=(0, 20), sticky="ew") 
         
         ctk.CTkLabel(self.stats_frame, text="TOTAL SCANNED", font=("Arial", 9, "bold"), text_color="#888").pack(pady=(12,0))
         self.lbl_total = ctk.CTkLabel(self.stats_frame, text="0", font=("Arial", 30, "bold"), text_color=("#333", "white"))
@@ -138,7 +139,7 @@ class AttendanceApp(ctk.CTk):
         self.right_frame.grid_columnconfigure(0, weight=1) 
         self.right_frame.grid_rowconfigure(1, weight=1)    
 
-        # 1. SCANNER AREA (Compact & Fixed)
+        # 1. SCANNER AREA
         self.scan_area = ctk.CTkFrame(self.right_frame, height=100, fg_color=("#F9F9F9", "#1e1e1e"), 
                                       corner_radius=15, border_color=("#EEE", "#333"), border_width=1)
         self.scan_area.grid(row=0, column=0, sticky="ew", padx=30, pady=25)
@@ -223,15 +224,14 @@ class AttendanceApp(ctk.CTk):
     def play_sound(self, success=True):
         try:
             if success:
-                winsound.Beep(1000, 200) # Success Beep
+                winsound.Beep(1000, 200) 
             else:
-                winsound.Beep(400, 500)  # Error Buzz
+                winsound.Beep(400, 500)  
         except:
             pass
 
     # --- LOGIC ---
     def setup_database(self):
-        # We now use self.db_name which has the FULL ABSOLUTE PATH
         self.conn = sqlite3.connect(self.db_name)
         self.c = self.conn.cursor()
         self.c.execute('''CREATE TABLE IF NOT EXISTS event_logs 
@@ -258,10 +258,13 @@ class AttendanceApp(ctk.CTk):
     def refresh_table(self):
         for item in self.tree.get_children(): self.tree.delete(item)
         active_date = self.date_picker.get_date().strftime("%Y-%m-%d")
-        evt = self.entry_event.get().strip()
-        self.c.execute("SELECT student_id, mode, timestamp FROM event_logs WHERE manual_date=? AND event_name=? ORDER BY timestamp DESC", (active_date, evt))
+        event_name = self.entry_event.get().strip()
+        
+        self.c.execute("SELECT student_id, mode, timestamp FROM event_logs WHERE manual_date=? AND event_name=? ORDER BY timestamp DESC", (active_date, event_name))
         logs = self.c.fetchall()
-        stats, total = {}, 0
+        
+        stats = {}
+        total = 0
         for log in logs:
             s_id, mode, ts = log
             fname, year = "Unknown ID", "N/A"
@@ -270,12 +273,30 @@ class AttendanceApp(ctk.CTk):
                 r = self.c.fetchone()
                 if r: fname, year = f"{r[0]} {r[1]}", str(r[2])
             except: pass
+            
             total += 1
             stats[year] = stats.get(year, 0) + 1
             self.tree.insert("", "end", values=(ts.split(' ')[1] if ' ' in ts else ts, s_id, fname, year, mode))
+        
         self.lbl_total.configure(text=str(total))
         bd = "\n".join([f"{k}: {v}" for k, v in sorted(stats.items())])
         self.lbl_breakdown.configure(text=bd if bd else "No Data")
+
+    def reset_log(self):
+        active_date = self.date_picker.get_date().strftime("%Y-%m-%d")
+        event_name = self.entry_event.get().strip()
+        
+        confirm = messagebox.askyesno("Confirm Reset", 
+                                      f"Are you sure you want to DELETE ALL logs for:\n\nDate: {active_date}\nEvent: {event_name}?\n\nThis cannot be undone.")
+        if confirm:
+            try:
+                self.c.execute("DELETE FROM event_logs WHERE manual_date=? AND event_name=?", (active_date, event_name))
+                self.conn.commit()
+                self.refresh_table()
+                self.play_sound(False)
+                messagebox.showinfo("Success", "Attendance Log Cleared.")
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
 
     def process_scan(self, event=None):
         sid = self.entry_scan.get().strip()
@@ -309,13 +330,46 @@ class AttendanceApp(ctk.CTk):
         self.entry_scan.delete(0, "end")
 
     def export_data(self):
+        # --- NEW SMART EXPORT ---
         date = self.date_picker.get_date().strftime("%Y-%m-%d")
-        evt = self.entry_event.get()
-        fn = filedialog.asksaveasfilename(initialfile=f"{''.join([c if c.isalnum() else '_' for c in evt])}_{date}.csv", defaultextension=".csv")
+        evt = self.entry_event.get().strip()
+        mode = self.mode_selector.get() # Get current mode (Time IN, Time OUT, etc.)
+
+        # Create filename: "Event_Date_Mode.csv"
+        clean_evt = "".join([c if c.isalnum() else "_" for c in evt])
+        default_name = f"{clean_evt}_{date}_{mode.replace(' ', '')}.csv"
+
+        fn = filedialog.asksaveasfilename(initialfile=default_name, defaultextension=".csv")
         if fn:
-            self.c.execute("SELECT * FROM event_logs WHERE manual_date=? AND event_name=?", (date, evt))
-            with open(fn, 'w', newline='') as f: csv.writer(f).writerows([["LogID", "Student ID", "Mode", "Timestamp", "Event", "Date"]] + self.c.fetchall())
-            messagebox.showinfo("Success", "Export Complete")
+            # Filter specifically by Mode, Event, and Date
+            self.c.execute("SELECT student_id, mode, timestamp FROM event_logs WHERE manual_date=? AND event_name=? AND mode=? ORDER BY timestamp DESC", (date, evt, mode))
+            logs = self.c.fetchall()
+
+            # Prepare CSV with Headers matching the Dashboard
+            # ["Time", "Student ID", "Full Name", "Year Level", "Status"]
+            export_list = [["Time", "Student ID", "Full Name", "Year Level", "Status"]]
+
+            for log in logs:
+                s_id, log_mode, ts = log
+                display_time = ts.split(' ')[1] if ' ' in ts else ts
+                
+                # Fetch Name & Year for the export
+                fname, year = "Unknown ID", "N/A"
+                try:
+                    self.c.execute("SELECT firstName, lastName, yearLevel FROM studentData WHERE studentID=?", (s_id,))
+                    r = self.c.fetchone()
+                    if r: fname, year = f"{r[0]} {r[1]}", str(r[2])
+                except: pass
+                
+                export_list.append([display_time, s_id, fname, year, log_mode])
+            
+            # Write to File
+            try:
+                with open(fn, 'w', newline='') as f: 
+                    csv.writer(f).writerows(export_list)
+                messagebox.showinfo("Success", f"Export Complete!\nSaved {len(logs)} records for '{mode}'.")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save file:\n{e}")
 
 if __name__ == "__main__":
     app = AttendanceApp()
