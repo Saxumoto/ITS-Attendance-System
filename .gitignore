@@ -1,0 +1,15 @@
+# Ignore the virtual environment
+venv/
+env/
+.env
+
+# Ignore compiled python files
+__pycache__/
+*.pyc
+
+# Ignore Excel/CSV reports (Optional: keep these local so you don't leak student data)
+*.csv
+*.xlsx
+
+# Ignore the Database (Optional: un-comment if you want to keep the DB local only)
+# StudentDatabase.db
