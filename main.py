@@ -116,7 +116,7 @@ class AttendanceApp(ctk.CTk):
                                         fg_color=THEME_COLOR, text_color="white", hover_color="#C08B28", font=("Arial", 13, "bold"))
         self.btn_export.grid(row=10, column=0, padx=25, pady=(20, 10), sticky="ew")
 
-        # Reset Button
+        # --- NEW RESET BUTTON ---
         self.btn_reset = ctk.CTkButton(self.sidebar, text="✖ Clear Log", command=self.reset_log, 
                                        height=28, fg_color="#C0392B", hover_color="#E74C3C", text_color="white")
         self.btn_reset.grid(row=11, column=0, padx=25, pady=(0, 20), sticky="ew")
@@ -283,6 +283,7 @@ class AttendanceApp(ctk.CTk):
         self.lbl_breakdown.configure(text=bd if bd else "No Data")
 
     def reset_log(self):
+        # --- 3. RESET LOGIC ---
         active_date = self.date_picker.get_date().strftime("%Y-%m-%d")
         event_name = self.entry_event.get().strip()
         
@@ -293,7 +294,7 @@ class AttendanceApp(ctk.CTk):
                 self.c.execute("DELETE FROM event_logs WHERE manual_date=? AND event_name=?", (active_date, event_name))
                 self.conn.commit()
                 self.refresh_table()
-                self.play_sound(False)
+                self.play_sound(False) # A little sound to indicate "Cleared"
                 messagebox.showinfo("Success", "Attendance Log Cleared.")
             except Exception as e:
                 messagebox.showerror("Error", str(e))
