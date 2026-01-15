@@ -12,4 +12,4 @@ __pycache__/
 *.xlsx
 
 # Ignore the Database (Optional: un-comment if you want to keep the DB local only)
-# StudentDatabase.db
+ StudentDatabase.db
