@@ -2,7 +2,9 @@ import customtkinter as ctk
 import sqlite3
 from datetime import datetime
 import os
+import sys  # <--- NEEDED FOR PATH FIX
 import csv
+import winsound
 from tkinter import filedialog, messagebox, ttk
 from tkcalendar import DateEntry
 from PIL import Image
@@ -21,7 +23,25 @@ class AttendanceApp(ctk.CTk):
         self.geometry("1280x800")
         self.minsize(1000, 650)
         
-        self.db_name = 'StudentDatabase.db'
+        # --- 1. SMART PATH SETUP (THE FIX) ---
+        # This ensures the app finds files whether it's a script or an .exe
+        if getattr(sys, 'frozen', False):
+            # If running as .exe, look in the same folder as the executable
+            self.app_dir = os.path.dirname(sys.executable)
+        else:
+            # If running as script, look in the script's folder
+            self.app_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Set paths for DB and Icon
+        self.db_name = os.path.join(self.app_dir, 'StudentDatabase.db')
+        icon_path = os.path.join(self.app_dir, 'logo.ico')
+
+        # Set Window Icon
+        try:
+            self.iconbitmap(icon_path)
+        except:
+            pass
+
         self.setup_database()
 
         # --- LAYOUT GRID ---
@@ -34,13 +54,19 @@ class AttendanceApp(ctk.CTk):
         self.sidebar.grid(row=0, column=0, sticky="nsew")
         self.sidebar.grid_rowconfigure(11, weight=1)
 
-        # 1. HEADER
+        # HEADER
         self.header_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         self.header_frame.grid(row=0, column=0, pady=(20, 10), padx=20, sticky="ew")
         
+        # Load Images Safely
         try:
-            logo_img = ctk.CTkImage(light_image=Image.open("logo.png"),
-                                    dark_image=Image.open("logo.png"),
+            # Check internal temp folder first (for bundled images), then external
+            # (PyInstaller unpacks images to sys._MEIPASS)
+            base_path = sys._MEIPASS if getattr(sys, 'frozen', False) else self.app_dir
+            
+            logo_path = os.path.join(base_path, "logo.png")
+            logo_img = ctk.CTkImage(light_image=Image.open(logo_path),
+                                    dark_image=Image.open(logo_path),
                                     size=(35, 35)) 
             self.logo_label = ctk.CTkLabel(self.header_frame, text="  ITS ATTENDANCE", image=logo_img, 
                                          compound="left", font=("Arial Black", 16), text_color=THEME_COLOR)
@@ -57,7 +83,7 @@ class AttendanceApp(ctk.CTk):
                                       command=self.toggle_mode)
         self.btn_mode.pack(side="right")
 
-        # 2. CONTROLS
+        # CONTROLS
         self.add_sidebar_label("ACTIVE DATE", row=1)
         self.cal_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         self.cal_frame.grid(row=2, column=0, padx=25, sticky="ew")
@@ -94,9 +120,7 @@ class AttendanceApp(ctk.CTk):
                                         fg_color=THEME_COLOR, text_color="white", hover_color="#C08B28", font=("Arial", 13, "bold"))
         self.btn_export.grid(row=10, column=0, padx=25, pady=20, sticky="ew")
 
-        # 3. LIVE STATS CARD (AUTO-RESIZING)
-        # I removed 'height=100' and 'pack_propagate(False)'
-        # It will now grow vertically to fit all your data.
+        # 3. LIVE STATS CARD (Auto-Resizing)
         self.stats_frame = ctk.CTkFrame(self.sidebar, fg_color=("white", "#1a1a1a"), 
                                         corner_radius=10, border_color=("#DDD", "#333"), border_width=1)
         self.stats_frame.grid(row=11, column=0, padx=20, pady=(0, 20), sticky="ew") 
@@ -114,7 +138,7 @@ class AttendanceApp(ctk.CTk):
         self.right_frame.grid_columnconfigure(0, weight=1) 
         self.right_frame.grid_rowconfigure(1, weight=1)    
 
-        # 1. SCANNER AREA (Compact)
+        # 1. SCANNER AREA (Compact & Fixed)
         self.scan_area = ctk.CTkFrame(self.right_frame, height=100, fg_color=("#F9F9F9", "#1e1e1e"), 
                                       corner_radius=15, border_color=("#EEE", "#333"), border_width=1)
         self.scan_area.grid(row=0, column=0, sticky="ew", padx=30, pady=25)
@@ -123,15 +147,10 @@ class AttendanceApp(ctk.CTk):
         self.lbl_status = ctk.CTkLabel(self.scan_area, text="Ready...", font=("Arial", 12, "bold"), text_color="#888")
         self.lbl_status.pack(pady=(10, 2)) 
         
-        # Input Box
-        self.entry_scan = ctk.CTkEntry(self.scan_area, 
-                                       height=35,           
-                                       width=250,           
-                                       font=("Arial", 18), 
-                                       placeholder_text="Scan ID", justify="center",
+        self.entry_scan = ctk.CTkEntry(self.scan_area, height=35, width=250,           
+                                       font=("Arial", 18), placeholder_text="Scan ID", justify="center",
                                        fg_color=("white", "#2b2b2b"), text_color=("black", "white"),
                                        border_color=THEME_COLOR, border_width=2)
-        
         self.entry_scan.pack(pady=5) 
         self.entry_scan.bind('<Return>', self.process_scan)
         self.entry_scan.focus()
@@ -200,8 +219,19 @@ class AttendanceApp(ctk.CTk):
         
         style.map('Treeview', background=[('selected', THEME_COLOR)], foreground=[('selected', 'white')])
 
+    # --- AUDIO FEEDBACK ---
+    def play_sound(self, success=True):
+        try:
+            if success:
+                winsound.Beep(1000, 200) # Success Beep
+            else:
+                winsound.Beep(400, 500)  # Error Buzz
+        except:
+            pass
+
     # --- LOGIC ---
     def setup_database(self):
+        # We now use self.db_name which has the FULL ABSOLUTE PATH
         self.conn = sqlite3.connect(self.db_name)
         self.c = self.conn.cursor()
         self.c.execute('''CREATE TABLE IF NOT EXISTS event_logs 
@@ -253,22 +283,29 @@ class AttendanceApp(ctk.CTk):
         evt = self.entry_event.get().strip()
         date = self.date_picker.get_date().strftime("%Y-%m-%d")
         if not sid: return
+        
         if not self.check_time_limit():
             self.lbl_status.configure(text="⛔ TIME LIMIT REACHED", text_color="#FF4C4C")
+            self.play_sound(False)
             self.entry_scan.delete(0, "end")
             return
         
         self.c.execute("SELECT id FROM studentData WHERE studentID=?", (sid,))
         if self.c.fetchone():
             self.c.execute("SELECT id FROM event_logs WHERE student_id=? AND mode=? AND manual_date=? AND event_name=?", (sid, mode, date, evt))
-            if self.c.fetchone(): self.lbl_status.configure(text="⚠ ALREADY SCANNED", text_color="orange")
+            if self.c.fetchone(): 
+                self.lbl_status.configure(text="⚠ ALREADY SCANNED", text_color="orange")
+                self.play_sound(False)
             else:
                 self.c.execute("INSERT INTO event_logs (student_id, mode, timestamp, event_name, manual_date) VALUES (?,?,?,?,?)", 
                                (sid, mode, f"{date} {datetime.now().strftime('%H:%M:%S')}", evt, date))
                 self.conn.commit()
                 self.lbl_status.configure(text=f"✅ SUCCESS: {sid}", text_color="#27AE60")
+                self.play_sound(True)
                 self.refresh_table()
-        else: self.lbl_status.configure(text="❌ ID NOT FOUND", text_color="#FF4C4C")
+        else: 
+            self.lbl_status.configure(text="❌ ID NOT FOUND", text_color="#FF4C4C")
+            self.play_sound(False)
         self.entry_scan.delete(0, "end")
 
     def export_data(self):
