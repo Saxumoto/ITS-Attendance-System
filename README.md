@@ -1,57 +1,73 @@
-# 📱 ITS Attendance System (Command Center)
+# 📱 ITS Attendance System
 
-A modern, desktop-based attendance tracking solution designed for the **Information Technology Society (ITS)**. This system streamlines event check-ins using barcode scanning, real-time database updates, and automated reporting.
+A modern, desktop-based attendance tracking solution wrapped in a web-tech interface for the **Information Technology Society (ITS)**. This system streamlines event check-ins using barcode scanning, real-time database transactions, and automated side-by-side Excel reporting.
 
-Built with **Python** and **CustomTkinter** for a sleek, responsive user interface.
+Built with **Python Eel** serving a highly responsive HTML, CSS (Vanilla), and JavaScript frontend for a state-of-the-art dark slate dashboard experience.
+
+---
 
 ## 🚀 Key Features
 
-* **⚡ Fast Scanning:** Quick barcode/ID scanning with instant audio feedback (✅ Beep / ❌ Buzz).
-* **📊 Live Dashboard:** Real-time statistics of total attendees broken down by year level.
-* **🌗 Modern UI:** Professional Light/Dark mode with a responsive layout.
-* **📅 Event Management:** Custom date picker and event naming for organized record-keeping.
-* **📂 Data Power:**
-    * **Import:** Easily load student lists from Excel.
-    * **Export:** One-click export of attendance logs to CSV for reporting.
-* **💾 Local Database:** Powered by SQLite for reliable, offline data storage.
-* **📦 Portable:** Compiled into a standalone `.exe` for easy deployment on Windows computers.
+* **⚡ Fast Scanning Portal:** Quick barcode/ID scanning with instant Web Audio API synthesised feedback (✅ Beep / ❌ Buzz). Includes candidate resolution popup for multiple matches during keyboard search.
+* **🔒 Period Lock System:** Prevent accidental scans or registry entries by locking the active scan period (e.g. `Morning Time IN` is closed while `Morning Time OUT` remains open). Lock states are persisted crash-proof in SQLite.
+* **📈 6-Card Metrics Dashboard:** Real-time statistics tracking total unique attendees, divided into:
+  - **Total Attended**
+  - **1st Year (Freshmen)**
+  - **2nd Year (Sophomores)**
+  - **3rd Year (Juniors)**
+  - **4th Year (Seniors)**
+  - **Not Found (Unrecognized scans)**
+* **🔄 Unique Student Tracking:** Metric board logic tracks unique student IDs, avoiding duplicate tallies for students scanning multiple times.
+* **🎛️ Minimalist Horizontal Control Bar:** Custom spacing saves over 75% of vertical HUD height, leaving more room to display live student check-in log tables.
+* **👥 Transferee & Walk-in Support:** Register unrecognized scans with custom types: `New / Walk-in` or `Transferee`. 
+* **📅 Timezone-Safe Date Default:** Calendar defaults securely to local system time instead of UTC to avoid midnight data mismatch.
+* **📂 Native Excel Exporter (.xlsx):** Compiles side-by-side session data for active attendees, automatically calculating column widths to fit cell contents perfectly in Microsoft Excel with no text cutoffs.
+
+---
+
+## 📁 Project Structure
+
+The files are neatly organized into folders for clean maintainability:
+* `main.py` ➔ Python backend and Eel server entry point.
+* `StudentDatabase.db` ➔ Active production SQLite database.
+* `web/` ➔ Static UI files (`index.html` markup, styling, JS and `logo.png` logo assets).
+* `scripts/` ➔ Backend utility scripts (duplication checkers, Excel importers).
+* `rosters_and_archives/` ➔ Archive directory containing raw student directories and spreadsheet database source files.
+* `backups/` ➔ Archived deprecated CustomTkinter source files and graphic assets.
+* `venv/` ➔ Python virtual environment.
+
+---
 
 ## 🛠️ Tech Stack
 
-* **Language:** Python 3.12
-* **GUI Framework:** CustomTkinter
+* **Language Backend:** Python 3.12 (virtualized in venv)
+* **Frontend Engine:** Python Eel (serving Chrome/Chromium App-Mode)
+* **Design Stack:** HTML5, CSS3 Variables, JavaScript ES6
 * **Database:** SQLite3
-* **Data Handling:** Pandas, CSV
-* **Utilities:** Winsound (Audio), Pillow (Images), TkCalendar (Date Picker)
-* **Build Tool:** PyInstaller
+* **Spreadsheet Generation:** Pandas, Openpyxl (native `.xlsx` formatting)
+
+---
 
 ## 📥 Installation & Usage
 
-### Option A: Run the App (Windows)
-1.  Download the latest release (or locate the `dist/` folder).
-2.  Ensure `StudentDatabase.db` is in the same folder as `main.exe`.
-3.  Double-click **`main.exe`** to launch the Command Center.
-
-### Option B: Run from Source
-1.  Clone the repository:
-    ```bash
-    git clone [https://github.com/Saxumoto/ITS-Attendance-System.git](https://github.com/Saxumoto/ITS-Attendance-System.git)
-    cd ITS-Attendance-System
-    ```
-2.  Install dependencies:
-    ```bash
-    pip install customtkinter pandas pillow tkcalendar
-    ```
-3.  Run the application:
-    ```bash
-    python main.py
-    ```
-
-## 📸 How to Use
-1.  **Select Date & Event:** Choose the active date and name your event.
-2.  **Set Mode:** Choose between "Time IN" or "Time OUT".
-3.  **Scan:** Click the scanner box and start scanning student IDs.
-4.  **Export:** Click "Export Excel" to save the session data.
+### Running from Source
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Saxumoto/ITS-Attendance-System.git
+   cd ITS-Attendance-System
+   ```
+2. Activate virtual environment:
+   ```bash
+   .\venv\Scripts\activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install eel pandas openpyxl
+   ```
+4. Run the application:
+   ```bash
+   python main.py
+   ```
 
 ---
 *Developed for the Information Technology Society.*

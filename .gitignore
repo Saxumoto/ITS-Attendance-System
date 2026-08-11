@@ -7,9 +7,12 @@ env/
 __pycache__/
 *.pyc
 
-# Ignore Excel/CSV reports (Optional: keep these local so you don't leak student data)
+# Ignore Excel/CSV reports and roster raw files
 *.csv
 *.xlsx
+rosters_and_archives/
+data/
+backups/
 
-# Ignore the Database (Optional: un-comment if you want to keep the DB local only)
-StudentDatabase.db
+# Ignore databases
+*.db

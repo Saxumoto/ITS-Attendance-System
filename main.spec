@@ -1,12 +1,22 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('logo.png', '.'), ('logo.ico', '.'), ('sun.png', '.'), ('moon.png', '.')],
-    hiddenimports=[],
+    datas=[
+        ('web', 'web'),
+    ],
+    hiddenimports=[
+        'eel',
+        'bottle',
+        'geventwebsocket',
+        'pandas',
+        'openpyxl',
+        'tkinter',
+        'tkinter.filedialog',
+        'sqlite3',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -14,6 +24,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -22,7 +33,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='main',
+    name='ITS Attendance System',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -35,5 +46,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['logo.ico'],
+    icon=['web\\logo.ico'],
 )

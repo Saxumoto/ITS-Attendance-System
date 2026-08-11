@@ -1,0 +1,2092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ITS Attendance System</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <style>
+    /* --- CSS RESET & VARIABLES --- */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+    :root {
+      /* Dark Theme (Default) */
+      --bg-app: #0a0c10;
+      --bg-sidebar: #10131c;
+      --bg-card: #151924;
+      --bg-card-hover: #1c2232;
+      --border-color: #21283a;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      --primary: #b23a38; /* ITS Crimson Accent */
+      --primary-hover: #922928;
+      --primary-rgb: 178, 58, 56;
+      
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --success-border: rgba(16, 185, 129, 0.2);
+      
+      --warning: #f97316;
+      --warning-bg: rgba(249, 115, 22, 0.1);
+      --warning-border: rgba(249, 115, 22, 0.2);
+      
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.1);
+      --danger-border: rgba(239, 68, 68, 0.2);
+      
+      --info: #3b82f6;
+      --info-bg: rgba(59, 130, 246, 0.1);
+      --info-border: rgba(59, 130, 246, 0.2);
+
+      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    body.light-theme {
+      /* Light Theme */
+      --bg-app: #f8fafc;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f1f5f9;
+      --border-color: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      
+      --primary: #922928; /* ITS Crimson Accent (Darker for light BG) */
+      --primary-hover: #72201F;
+      
+      --success-bg: rgba(16, 185, 129, 0.08);
+      --success-border: rgba(16, 185, 129, 0.15);
+      
+      --warning-bg: rgba(249, 115, 22, 0.08);
+      --warning-border: rgba(249, 115, 22, 0.15);
+      
+      --danger-bg: rgba(239, 68, 68, 0.08);
+      --danger-border: rgba(239, 68, 68, 0.15);
+      
+      --info-bg: rgba(59, 130, 246, 0.08);
+      --info-border: rgba(59, 130, 246, 0.15);
+
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.02);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      overflow: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* --- SIDEBAR DESIGN --- */
+    aside {
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      z-index: 10;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .brand-header {
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.35);
+      object-fit: cover;
+    }
+
+    .brand-name {
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 0.5px;
+      color: var(--text-main);
+    }
+
+    .brand-name span {
+      color: var(--primary);
+    }
+
+    /* Theme Toggle Switch */
+    .theme-toggle {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .theme-toggle:hover {
+      background-color: var(--border-color);
+      color: var(--primary);
+    }
+
+    .sidebar-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Custom Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* Group Box / Card in Sidebar */
+    .sidebar-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+
+    .sidebar-card:hover {
+      border-color: rgba(var(--primary-rgb), 0.3);
+    }
+
+    .card-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.75px;
+      color: var(--text-muted);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* Custom styled Inputs */
+    .styled-input, .styled-select {
+      background-color: var(--bg-app);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      width: 100%;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .styled-input:focus, .styled-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.15);
+    }
+
+    .time-limit-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    /* Toggle switch CSS */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--border-color);
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 4px;
+      bottom: 4px;
+      background-color: var(--text-main);
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+      background-color: #000;
+    }
+
+    /* Action Buttons styling */
+    .actions-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 16px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: var(--transition);
+      text-decoration: none;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+      box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.25);
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-card);
+      border-color: var(--border-color);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--bg-card-hover);
+      border-color: var(--text-muted);
+    }
+
+    .btn-danger {
+      background-color: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background-color: var(--danger);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    }
+
+    /* --- MAIN CONTENT AREA --- */
+    main {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    header.top-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .title-area h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    .title-area p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .live-clock-badge {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 8px 16px;
+      border-radius: 50px;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-clock-badge .dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--success);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    /* --- METRICS GRID --- */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 16px;
+    }
+
+    .metric-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.3);
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background-color: var(--accent);
+    }
+
+    .metric-card:nth-child(1) { --accent: var(--primary); }
+    .metric-card:nth-child(2) { --accent: var(--info); }
+    .metric-card:nth-child(3) { --accent: var(--success); }
+    .metric-card:nth-child(4) { --accent: #a855f7; }
+    .metric-card:nth-child(5) { --accent: var(--warning); }
+    .metric-card:nth-child(6) { --accent: var(--danger); }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .metric-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--accent);
+      opacity: 0.8;
+    }
+
+    .metric-value {
+      font-size: 2.2rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      line-height: 1;
+      color: var(--text-main);
+      transition: var(--transition);
+    }
+
+    /* --- SCANNER HUD CONSOLE --- */
+    .scanner-console {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 12px 20px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      margin-bottom: 12px;
+    }
+
+    .scanner-console::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, rgba(var(--primary-rgb), 0.03) 0%, transparent 70%);
+    }
+
+    .scan-status-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      margin-bottom: 0;
+      text-align: left;
+      flex: 1;
+    }
+
+    .status-text {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+
+    .status-detail {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      max-width: 400px;
+      line-height: 1.3;
+      transition: var(--transition);
+    }
+
+    /* Scanning HUD Target Effect */
+    .scanner-hud-target {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+
+    .scanner-hud-target::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+      left: 0;
+      top: 0;
+      animation: scan-line 3s linear infinite;
+    }
+
+    .scanner-hud-target svg {
+      width: 24px;
+      height: 24px;
+      color: var(--border-color);
+      transition: var(--transition);
+    }
+
+    /* Scanning HUD Active State Classes */
+    .scanner-console.scanning-success {
+      border-color: var(--success);
+    }
+    .scanner-console.scanning-success .status-text {
+      color: var(--success);
+    }
+    .scanner-console.scanning-success .scanner-hud-target {
+      border-color: var(--success);
+    }
+    .scanner-console.scanning-success .scanner-hud-target svg {
+      color: var(--success);
+      transform: scale(1.1);
+    }
+    .scanner-console.scanning-success .scanner-hud-target::before {
+      background-color: var(--success);
+      box-shadow: 0 0 10px var(--success);
+    }
+
+    .scanner-console.scanning-warning {
+      border-color: var(--warning);
+    }
+    .scanner-console.scanning-warning .status-text {
+      color: var(--warning);
+    }
+    .scanner-console.scanning-warning .scanner-hud-target {
+      border-color: var(--warning);
+    }
+    .scanner-console.scanning-warning .scanner-hud-target svg {
+      color: var(--warning);
+      transform: scale(1.1);
+    }
+    .scanner-console.scanning-warning .scanner-hud-target::before {
+      background-color: var(--warning);
+      box-shadow: 0 0 10px var(--warning);
+    }
+
+    .scanner-console.scanning-danger {
+      border-color: var(--danger);
+    }
+    .scanner-console.scanning-danger .status-text {
+      color: var(--danger);
+    }
+    .scanner-console.scanning-danger .scanner-hud-target {
+      border-color: var(--danger);
+    }
+    .scanner-console.scanning-danger .scanner-hud-target svg {
+      color: var(--danger);
+      transform: scale(1.1);
+    }
+    .scanner-console.scanning-danger .scanner-hud-target::before {
+      background-color: var(--danger);
+      box-shadow: 0 0 10px var(--danger);
+    }
+
+    /* Scan Input Bar */
+    .scan-input-wrapper {
+      position: relative;
+      width: 320px;
+      flex-shrink: 0;
+    }
+
+    .scan-input {
+      width: 100%;
+      background-color: var(--bg-app);
+      border: 2px solid var(--primary);
+      border-radius: var(--radius-md);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 10px 16px;
+      padding-right: 44px;
+      text-align: left;
+      outline: none;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 20px rgba(var(--primary-rgb), 0.1);
+      transition: var(--transition);
+    }
+
+    .scan-input::placeholder {
+      font-family: var(--font-sans);
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      letter-spacing: 0;
+    }
+
+    .scan-input:focus {
+      box-shadow: 0 4px 24px rgba(var(--primary-rgb), 0.2);
+    }
+
+    .scan-input-icon {
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--primary);
+      width: 22px;
+      height: 22px;
+      pointer-events: none;
+    }
+
+    /* --- LIVE TABLE BOARD --- */
+    .table-container-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 250px;
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .table-header h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .table-header h2 svg {
+      color: var(--primary);
+      width: 20px;
+      height: 20px;
+    }
+
+    .table-wrapper {
+      overflow: auto;
+      flex: 1;
+    }
+
+    table.logs-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.925rem;
+    }
+
+    table.logs-table th {
+      background-color: var(--bg-sidebar);
+      padding: 12px 20px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    table.logs-table td {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+      transition: var(--transition);
+    }
+
+    table.logs-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    table.logs-table tbody tr {
+      background-color: transparent;
+    }
+
+    table.logs-table tbody tr:hover td {
+      background-color: var(--bg-card-hover);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-time {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      background-color: var(--bg-app);
+      border: 1px solid var(--border-color);
+    }
+
+    .badge-id {
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+
+    .badge-year {
+      background-color: var(--bg-app);
+      border: 1px solid var(--border-color);
+    }
+
+    .badge-reg {
+      background-color: var(--info-bg);
+      color: var(--info);
+      border: 1px solid var(--info-border);
+    }
+    
+    .badge-reg.new {
+      background-color: var(--primary-bg);
+      color: var(--primary);
+      border: 1px solid rgba(var(--primary-rgb), 0.2);
+    }
+
+    .badge-reg.not-found {
+      background-color: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid var(--danger-border);
+    }
+
+    .badge-status {
+      font-weight: 700;
+    }
+
+    .badge-status.morning-in {
+      background-color: var(--success-bg);
+      color: var(--success);
+      border: 1px solid var(--success-border);
+    }
+
+    .badge-status.morning-out {
+      background-color: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid var(--warning-border);
+    }
+
+    .badge-status.afternoon-in {
+      background-color: var(--info-bg);
+      color: var(--info);
+      border: 1px solid var(--info-border);
+    }
+
+    .badge-status.afternoon-out {
+      background-color: rgba(168, 85, 247, 0.1);
+      color: rgb(168, 85, 247);
+      border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+
+    /* Checkbox Styles in Table */
+    .checkbox-cell {
+      width: 40px;
+      text-align: center;
+    }
+
+    .custom-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border-color);
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .custom-checkbox:hover {
+      border-color: var(--primary);
+    }
+
+    .custom-checkbox.checked {
+      background-color: var(--primary);
+      border-color: var(--primary);
+      color: #000;
+    }
+
+    .custom-checkbox svg {
+      width: 12px;
+      height: 12px;
+      display: none;
+    }
+
+    .custom-checkbox.checked svg {
+      display: block;
+    }
+
+    /* Empty state */
+    .empty-state {
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--text-muted);
+      gap: 12px;
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      color: var(--border-color);
+    }
+
+    /* --- MODAL DIALOGS --- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-window {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      transform: scale(0.95);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-overlay.active .modal-window {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-title svg {
+      width: 22px;
+      height: 22px;
+      color: var(--primary);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      background-color: var(--bg-card-hover);
+      color: var(--text-main);
+    }
+
+    .modal-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-color);
+      background-color: var(--bg-sidebar);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .modal-footer .btn {
+      width: auto;
+    }
+
+    /* Multiple matches item list */
+    .matches-list {
+      max-height: 240px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+    }
+
+    .match-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: var(--transition);
+    }
+
+    .match-item:last-child {
+      border-bottom: none;
+    }
+
+    .match-item:hover {
+      background-color: var(--bg-card-hover);
+    }
+
+    .match-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .match-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    /* --- TOAST NOTIFICATIONS --- */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    .toast {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 320px;
+      transform: translateY(20px);
+      opacity: 0;
+      animation: toast-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      border-left: 4px solid var(--primary);
+    }
+
+    .toast-success { border-left-color: var(--success); }
+    .toast-error { border-left-color: var(--danger); }
+    .toast-warning { border-left-color: var(--warning); }
+
+    .toast-icon {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toast-success .toast-icon { color: var(--success); }
+    .toast-error .toast-icon { color: var(--danger); }
+    .toast-warning .toast-icon { color: var(--warning); }
+
+    .toast-message {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-main);
+      flex: 1;
+    }
+
+    /* --- KEYFRAMES & ANIMATIONS --- */
+    @keyframes scan-line {
+      0% { top: 0%; }
+      50% { top: 100%; }
+      100% { top: 0%; }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.5; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.5; }
+    }
+
+    @keyframes toast-in {
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* --- RESPONSIVE ADJUSTMENTS --- */
+    @media (max-width: 1024px) {
+      body {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow-y: auto;
+      }
+      aside {
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+      }
+      main {
+        height: auto;
+        overflow-y: visible;
+      }
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      .table-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LEFT SIDEBAR -->
+  <aside>
+    <div class="brand-header">
+      <div class="brand-logo">
+        <img src="logo.png" alt="ITS Logo" class="logo-icon">
+        <div class="brand-name">ITS <span>ATTENDANCE</span></div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="Toggle Appearance">
+        <!-- Sun Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg>
+        <!-- Moon Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-scroll">
+      <!-- Session Parameters Card -->
+      <div class="sidebar-card">
+        <div class="card-label">Session Parameters</div>
+        
+        <div class="form-group">
+          <label class="card-label" style="font-size:0.7rem;" for="activeDate">Active Date</label>
+          <input type="date" id="activeDate" class="styled-input">
+        </div>
+
+        <div class="form-group">
+          <label class="card-label" style="font-size:0.7rem;" for="eventName">Event Name</label>
+          <input type="text" id="eventName" class="styled-input" value="General Event">
+        </div>
+
+        <div class="form-group">
+          <label class="card-label" style="font-size:0.7rem;" for="scanMode">Scan Mode</label>
+          <select id="scanMode" class="styled-select">
+            <option value="Morning Time IN">Morning Time IN</option>
+            <option value="Morning Time OUT">Morning Time OUT</option>
+            <option value="Afternoon Time IN">Afternoon Time IN</option>
+            <option value="Afternoon Time OUT">Afternoon Time OUT</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary" id="btnLockPeriod" style="margin-top: 5px; font-size: 0.85rem; padding: 8px 12px;">
+          <span>🔒 Lock Current Period</span>
+        </button>
+      </div>
+
+      <!-- Time Cutoff Card -->
+      <div class="sidebar-card">
+        <div class="time-limit-toggle">
+          <div class="card-label">Time Cut-off Limit</div>
+          <label class="switch">
+            <input type="checkbox" id="useTimeLimit">
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="form-group" id="timeLimitWrapper" style="opacity: 0.5; pointer-events: none;">
+          <input type="time" id="timeLimit" class="styled-input" value="08:30">
+        </div>
+      </div>
+
+      <!-- Actions Card -->
+      <div class="sidebar-card">
+        <div class="card-label">Control Console</div>
+        <div class="actions-grid">
+          <button class="btn btn-primary" id="btnRegister">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Register Student
+          </button>
+          
+          <button class="btn btn-secondary" id="btnExport">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Logs (CSV)
+          </button>
+          
+          <button class="btn btn-secondary" id="btnDeleteSelected">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            Delete Checked
+          </button>
+          
+          <button class="btn btn-danger" id="btnClearLogs" style="margin-top: 10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            Clear Active Logs
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN SECTION -->
+  <main>
+    <header class="top-header">
+      <div class="title-area">
+        <h1 id="viewEventTitle">General Event</h1>
+        <p>Information Technology Society Attendance System</p>
+      </div>
+
+      <div class="live-clock-badge">
+        <span class="dot"></span>
+        <span id="liveTime">00:00:00 AM</span>
+      </div>
+    </header>
+
+    <!-- METRICS GRID -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-title">Total Attended</div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="metric-value" id="valTotal">0</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-title">1st Year (Freshmen)</div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10"/></svg>
+        </div>
+        <div class="metric-value" id="valFreshmen">0</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-title">2nd Year (Sophomores)</div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10"/></svg>
+        </div>
+        <div class="metric-value" id="valSophomores">0</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-title">3rd Year (Juniors)</div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10"/></svg>
+        </div>
+        <div class="metric-value" id="valJuniors">0</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-title">4th Year (Seniors)</div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10"/></svg>
+        </div>
+        <div class="metric-value" id="valSeniors">0</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-title">Not Found</div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="metric-value" id="valNotFound">0</div>
+      </div>
+    </section>
+
+    <!-- SCANNER CONSOLE -->
+    <section class="scanner-console" id="scannerConsole">
+      <div class="scan-status-indicator">
+        <div class="status-text" id="statusBanner">Waiting for Scan...</div>
+        <div class="status-detail" id="statusDetail">Please position barcode scanner or type student name/ID for manual search.</div>
+      </div>
+
+      <div class="scanner-hud-target">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+          <rect x="7" y="7" width="10" height="10" rx="1"/>
+          <line x1="10" y1="10" x2="14" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/>
+        </svg>
+      </div>
+
+      <div class="scan-input-wrapper">
+        <input type="text" class="scan-input" id="scanInput" placeholder="SCAN BARCODE / SEARCH NAME..." autocomplete="off">
+        <svg xmlns="http://www.w3.org/2000/svg" class="scan-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M4 16h16M4 12h16M4 8h16M4 4h16"/></svg>
+      </div>
+    </section>
+
+    <!-- LIVE LOG DASHBOARD TABLE -->
+    <section class="table-container-card">
+      <div class="table-header">
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Live Log Dashboard
+        </h2>
+        <div class="card-label" style="font-size: 0.7rem; color: var(--text-muted);">Click [☐] to check row for mass-delete</div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="logs-table" id="logsTable">
+          <thead>
+            <tr>
+              <th class="checkbox-cell">
+                <div class="custom-checkbox" id="headerCheckbox">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+              </th>
+              <th>Time</th>
+              <th>Student ID</th>
+              <th>Full Name</th>
+              <th>Year Level</th>
+              <th>Reg Type</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="logsTableBody">
+            <!-- Populated via Javascript -->
+          </tbody>
+        </table>
+        
+        <div class="empty-state" id="emptyState" style="display: none;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div>
+            <h3>No Scans Registered Yet</h3>
+            <p style="font-size:0.85rem; margin-top:4px;">Scanned students for the active date and event will appear here.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- --- MODALS --- -->
+
+  <!-- Modal 1: Register Student Dialog -->
+  <div class="modal-overlay" id="registerModal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+          Register New Student
+        </div>
+        <button class="modal-close" onclick="closeModal('registerModal')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="card-label" for="regStudentID">Student ID / Barcode</label>
+          <input type="text" id="regStudentID" class="styled-input" placeholder="e.g. 59841010">
+        </div>
+        <div class="form-group">
+          <label class="card-label" for="regFirstName">First Name</label>
+          <input type="text" id="regFirstName" class="styled-input" placeholder="e.g. Juan">
+        </div>
+        <div class="form-group">
+          <label class="card-label" for="regLastName">Last Name</label>
+          <input type="text" id="regLastName" class="styled-input" placeholder="e.g. Dela Cruz">
+        </div>
+        <div class="form-group">
+          <label class="card-label" for="regYearLevel">Year Level</label>
+          <select id="regYearLevel" class="styled-select">
+            <option value="1st Year">1st Year</option>
+            <option value="2nd Year">2nd Year</option>
+            <option value="3rd Year">3rd Year</option>
+            <option value="4th Year">4th Year</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="card-label" for="regType">Registration Type</label>
+          <select id="regType" class="styled-select">
+            <option value="NEW">New / Walk-In</option>
+            <option value="TRANSFEREE">Transferee</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('registerModal')">Cancel</button>
+        <button class="btn btn-primary" id="btnSaveStudent">Save & Log Attendance</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: ID Not Found Resolver -->
+  <div class="modal-overlay" id="notFoundModal">
+    <div class="modal-window" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--warning);"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Student ID Not Found
+        </div>
+        <button class="modal-close" onclick="closeModal('notFoundModal')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="text-align: center; gap: 10px;">
+        <p>The scanned barcode/ID <strong id="notFoundIDLabel" style="font-family:var(--font-mono); color:var(--primary);">00000000</strong> is not registered in the database.</p>
+        <p style="font-size:0.875rem; color:var(--text-muted);">How would you like to log this scan?</p>
+      </div>
+      <div class="modal-footer" style="flex-direction: column; gap: 8px;">
+        <button class="btn btn-primary" id="btnLogUnregistered" style="width:100%;">Log as Unregistered</button>
+        <button class="btn btn-secondary" id="btnRegisterNewFromScan" style="width:100%; border-color:var(--success); color:var(--success);">Register Student Info</button>
+        <button class="btn btn-secondary" onclick="closeModal('notFoundModal')" style="width:100%;">Ignore & Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Multiple Matches Search Dialog -->
+  <div class="modal-overlay" id="selectionModal">
+    <div class="modal-window" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Select Student Profile
+        </div>
+        <button class="modal-close" onclick="closeModal('selectionModal')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom: 5px;">Multiple students match the search term '<strong id="multipleMatchesSearchLabel">Ab</strong>'. Please select the correct student:</p>
+        <div class="matches-list" id="matchesListContainer">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('selectionModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- --- PYTHON-EEL BRIDGE & LOGIC --- -->
+  <script type="text/javascript" src="/eel.js"></script>
+  <script>
+    let students = [];
+    let eventLogs = [];
+    let pendingScanID = ''; // Track ID for Not Found Modal
+
+    // --- SYNTHESIZE BEEP SOUNDS (Browser Offline-Friendly Web Audio API) ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playBeepSound(type) {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      const now = audioCtx.currentTime;
+
+      if (type === 'success') {
+        osc.frequency.setValueAtTime(950, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'warning') {
+        osc.frequency.setValueAtTime(500, now);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.linearRampToValueAtTime(100, now + 0.4);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      }
+    }
+
+    // --- INITIAL LOAD & BRIDGE LISTENERS ---
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Date default to current local date
+      const datePicker = document.getElementById('activeDate');
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const today = `${year}-${month}-${day}`;
+      datePicker.value = today;
+
+      // Event title live mirroring
+      const eventNameInput = document.getElementById('eventName');
+      const viewEventTitle = document.getElementById('viewEventTitle');
+      eventNameInput.addEventListener('input', () => {
+        viewEventTitle.textContent = eventNameInput.value.trim() || 'General Event';
+      });
+
+      // Theme toggle
+      const themeToggle = document.getElementById('themeToggle');
+      const sunIcon = themeToggle.querySelector('.icon-sun');
+      const moonIcon = themeToggle.querySelector('.icon-moon');
+      
+      themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('light-theme');
+        const isLight = document.body.classList.contains('light-theme');
+        sunIcon.style.display = isLight ? 'block' : 'none';
+        moonIcon.style.display = isLight ? 'none' : 'block';
+      });
+
+      // Date, mode & event inputs change listeners
+      datePicker.addEventListener('change', () => { loadInitialData(); checkPeriodLock(); });
+      document.getElementById('scanMode').addEventListener('change', () => { loadInitialData(); checkPeriodLock(); });
+      eventNameInput.addEventListener('change', () => { loadInitialData(); checkPeriodLock(); });
+
+      // Time cutoff toggle listener
+      const useTimeLimit = document.getElementById('useTimeLimit');
+      const timeLimitWrapper = document.getElementById('timeLimitWrapper');
+      useTimeLimit.addEventListener('change', () => {
+        if (useTimeLimit.checked) {
+          timeLimitWrapper.style.opacity = '1';
+          timeLimitWrapper.style.pointerEvents = 'auto';
+        } else {
+          timeLimitWrapper.style.opacity = '0.5';
+          timeLimitWrapper.style.pointerEvents = 'none';
+        }
+      });
+
+      // Live Time clock updater
+      setInterval(() => {
+        const liveTimeLabel = document.getElementById('liveTime');
+        const now = new Date();
+        liveTimeLabel.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }, 1000);
+
+      // Scan input listener
+      const scanInput = document.getElementById('scanInput');
+      scanInput.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+          await processScan(scanInput.value.trim());
+          scanInput.value = '';
+        }
+      });
+
+      // Actions Bindings
+      document.getElementById('btnLockPeriod').addEventListener('click', handleLockToggle);
+      document.getElementById('btnRegister').addEventListener('click', () => openModal('registerModal'));
+      document.getElementById('btnSaveStudent').addEventListener('click', saveNewStudentForm);
+      document.getElementById('btnLogUnregistered').addEventListener('click', logAsUnregistered);
+      document.getElementById('btnRegisterNewFromScan').addEventListener('click', registerNewFromScan);
+      document.getElementById('btnExport').addEventListener('click', exportLogsCSV);
+      document.getElementById('btnDeleteSelected').addEventListener('click', deleteCheckedLogs);
+      document.getElementById('btnClearLogs').addEventListener('click', clearAllLogs);
+
+      // Table Header Mass Selection Checkbox
+      const headerCheckbox = document.getElementById('headerCheckbox');
+      headerCheckbox.addEventListener('click', () => {
+        headerCheckbox.classList.toggle('checked');
+        const isChecked = headerCheckbox.classList.contains('checked');
+        const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+        rowCheckboxes.forEach(cb => {
+          if (isChecked) cb.classList.add('checked');
+          else cb.classList.remove('checked');
+        });
+      });
+
+      // Run initial load (allow 500ms for eel library to connect first)
+      setTimeout(() => { loadInitialData(); checkPeriodLock(); }, 300);
+    });
+
+    // Modal Helpers
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    // Toast Notification Builder
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let icon = '';
+      if (type === 'success') {
+        icon = `<svg xmlns="http://www.w3.org/2000/svg" class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>`;
+      } else if (type === 'error') {
+        icon = `<svg xmlns="http://www.w3.org/2000/svg" class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+      } else {
+        icon = `<svg xmlns="http://www.w3.org/2000/svg" class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+      }
+
+      toast.innerHTML = `
+        ${icon}
+        <span class="toast-message">${message}</span>
+      `;
+      container.appendChild(toast);
+
+      // Auto remove toast
+      setTimeout(() => {
+        toast.style.animation = 'toast-in 0.3s ease reverse forwards';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // --- REFRESH METRICS & LOG TABLE DATA ---
+    async function loadInitialData() {
+      try {
+        const datePicker = document.getElementById('activeDate');
+        const eventNameInput = document.getElementById('eventName');
+        
+        const activeDate = datePicker.value;
+        const eventName = eventNameInput.value.trim();
+        
+        document.getElementById('viewEventTitle').textContent = eventName || 'General Event';
+
+        // Call Eel Backend
+        const data = await eel.get_initial_data(activeDate, eventName)();
+        students = data.students || [];
+        eventLogs = data.logs || [];
+        
+        refreshUI();
+      } catch (err) {
+        console.error("Eel communication failure: ", err);
+      }
+    }
+
+    function refreshUI() {
+      const logsBody = document.getElementById('logsTableBody');
+      logsBody.innerHTML = '';
+      
+      let totalCount = 0;
+      let y1Count = 0;
+      let y2Count = 0;
+      let y3Count = 0;
+      let y4Count = 0;
+      let yNotFoundCount = 0;
+
+      document.getElementById('headerCheckbox').classList.remove('checked');
+
+      if (eventLogs.length === 0) {
+        document.getElementById('emptyState').style.display = 'flex';
+      } else {
+        document.getElementById('emptyState').style.display = 'none';
+
+        const seenStudentIDs = new Set();
+        eventLogs.forEach((log) => {
+          let student = students.find(s => s.studentID === log.studentID);
+          let name = 'UNKNOWN STUDENT';
+          let year = 'N/A';
+          let regType = 'NOT FOUND';
+          
+          if (student) {
+            name = `${student.lastName.toUpperCase()}, ${student.firstName}`;
+            year = student.yearLevel;
+            regType = student.regType || 'EXISTING';
+          } else if (log.studentID === 'UNREGISTERED') {
+            name = 'UNREGISTERED ID BARCODE';
+          }
+          
+          // Only increment metrics if it's a unique student scan for today's event
+          if (!seenStudentIDs.has(log.studentID)) {
+            seenStudentIDs.add(log.studentID);
+            totalCount++;
+            
+            if (regType === 'NOT FOUND' || log.studentID === 'UNREGISTERED') {
+              yNotFoundCount++;
+            } else {
+              const yearLow = year.toLowerCase();
+              if (yearLow.includes('1st') || yearLow === '1') {
+                y1Count++;
+              } else if (yearLow.includes('2nd') || yearLow === '2') {
+                y2Count++;
+              } else if (yearLow.includes('3rd') || yearLow === '3') {
+                y3Count++;
+              } else if (yearLow.includes('4th') || yearLow === '4') {
+                y4Count++;
+              }
+            }
+          }
+
+          const timeStr = log.timestamp.split(' ')[1] || log.timestamp;
+          
+          let modeClass = 'morning-in';
+          if (log.mode === 'Morning Time OUT') modeClass = 'morning-out';
+          else if (log.mode === 'Afternoon Time IN') modeClass = 'afternoon-in';
+          else if (log.mode === 'Afternoon Time OUT') modeClass = 'afternoon-out';
+
+          let regTypeClass = '';
+          if (regType === 'NEW') regTypeClass = 'new';
+          else if (regType === 'NOT FOUND') regTypeClass = 'not-found';
+
+          const row = document.createElement('tr');
+          row.dataset.studentId = log.studentID;
+          row.dataset.mode = log.mode;
+          row.dataset.timestamp = log.timestamp;
+          
+          row.innerHTML = `
+            <td class="checkbox-cell">
+              <div class="custom-checkbox row-checkbox">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </td>
+            <td><span class="badge badge-time">${timeStr}</span></td>
+            <td><span class="badge badge-id">${log.studentID}</span></td>
+            <td><strong>${name}</strong></td>
+            <td><span class="badge badge-year">${year}</span></td>
+            <td><span class="badge badge-reg ${regTypeClass}">${regType}</span></td>
+            <td><span class="badge badge-status ${modeClass}">${log.mode}</span></td>
+          `;
+
+          const rowCheckbox = row.querySelector('.row-checkbox');
+          row.querySelector('td:not(.checkbox-cell)').parentNode.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'INPUT' && !e.target.closest('.custom-checkbox')) {
+              rowCheckbox.classList.toggle('checked');
+            }
+          });
+          
+          rowCheckbox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            rowCheckbox.classList.toggle('checked');
+          });
+
+          logsBody.appendChild(row);
+        });
+      }
+
+      document.getElementById('valTotal').textContent = totalCount;
+      document.getElementById('valFreshmen').textContent = y1Count;
+      document.getElementById('valSophomores').textContent = y2Count;
+      document.getElementById('valJuniors').textContent = y3Count;
+      document.getElementById('valSeniors').textContent = y4Count;
+      document.getElementById('valNotFound').textContent = yNotFoundCount;
+    }
+
+    // --- PROCESSING BARCODE / KEYBOARD ENTRY SCAN ---
+    async function processScan(query) {
+      if (!query) return;
+
+      const consoleHUD = document.getElementById('scannerConsole');
+      const statusBanner = document.getElementById('statusBanner');
+      const statusDetail = document.getElementById('statusDetail');
+
+      consoleHUD.className = 'scanner-console';
+
+      const activeDate = document.getElementById('activeDate').value;
+      const eventName = document.getElementById('eventName').value.trim();
+      const currentMode = document.getElementById('scanMode').value;
+      const useTimeLimit = document.getElementById('useTimeLimit').checked;
+      const timeLimitVal = document.getElementById('timeLimit').value;
+
+      try {
+        // Run lookups in backend
+        let res = await eel.process_scan_py(query, activeDate, eventName, currentMode, useTimeLimit, timeLimitVal)();
+
+        if (res.status === 'blocked_locked') {
+          statusBanner.textContent = '🔒 PERIOD LOCKED';
+          statusDetail.textContent = `This scanning session is closed. Unlock it in the sidebar to scan.`;
+          consoleHUD.classList.add('scanning-danger');
+          playBeepSound('error');
+          showToast('Scan Blocked: Period is Locked!', 'error');
+        }
+        else if (res.status === 'blocked_cutoff') {
+          statusBanner.textContent = 'Blocked: Time Limit Exceeded';
+          statusDetail.textContent = `Cut-off time (${timeLimitVal}) was reached. This scan is ignored.`;
+          consoleHUD.classList.add('scanning-danger');
+          playBeepSound('error');
+          showToast('Attendance Cut-off reached! Scan Blocked.', 'error');
+        } 
+        else if (res.status === 'success') {
+          statusBanner.textContent = 'Scan Verified';
+          statusDetail.textContent = `${res.student.lastName.toUpperCase()}, ${res.student.firstName} | ${res.student.yearLevel.toUpperCase()} | ID: ${res.student.studentID}`;
+          consoleHUD.classList.add('scanning-success');
+          playBeepSound('success');
+          showToast(`Logged successfully: ${res.student.firstName} ${res.student.lastName}`);
+          await loadInitialData();
+        } 
+        else if (res.status === 'already_logged') {
+          statusBanner.textContent = 'Already Logged';
+          statusDetail.textContent = `${res.student.firstName} ${res.student.lastName} has already checked in for ${currentMode}.`;
+          consoleHUD.classList.add('scanning-warning');
+          playBeepSound('warning');
+          showToast(`${res.student.firstName} ${res.student.lastName} already checked in.`, 'warning');
+        } 
+        else if (res.status === 'multiple_matches') {
+          resolveMultipleMatches(query, res.candidates);
+        } 
+        else if (res.status === 'id_not_found') {
+          pendingScanID = query;
+          document.getElementById('notFoundIDLabel').textContent = query;
+          statusBanner.textContent = 'Resolving Unregistered ID';
+          statusDetail.textContent = `Barcode ${query} is not in database. Needs resolution...`;
+          consoleHUD.classList.add('scanning-warning');
+          playBeepSound('warning');
+          openModal('notFoundModal');
+        } 
+        else { // not_found spelling
+          statusBanner.textContent = 'ID / Name Not Found';
+          statusDetail.textContent = `Entry '${query}' did not match any student profile. Try scanning again.`;
+          consoleHUD.classList.add('scanning-danger');
+          playBeepSound('error');
+          showToast(`No match found for: "${query}"`, 'error');
+        }
+      } catch (err) {
+        console.error("Scan processing error: ", err);
+      }
+    }
+
+    // --- DIALOG MODAL: MULTIPLE MATCHES ---
+    function resolveMultipleMatches(searchQuery, candidates) {
+      document.getElementById('multipleMatchesSearchLabel').textContent = searchQuery;
+      const listContainer = document.getElementById('matchesListContainer');
+      listContainer.innerHTML = '';
+
+      candidates.forEach(cand => {
+        const item = document.createElement('div');
+        item.className = 'match-item';
+        item.innerHTML = `
+          <div>
+            <div class="match-name">${cand.lastName}, ${cand.firstName}</div>
+            <div class="match-sub">ID: ${cand.studentID} • ${cand.yearLevel}</div>
+          </div>
+          <span class="badge badge-reg">${cand.regType || 'EXISTING'}</span>
+        `;
+
+        item.addEventListener('click', async () => {
+          const activeDate = document.getElementById('activeDate').value;
+          const eventName = document.getElementById('eventName').value.trim();
+          const currentMode = document.getElementById('scanMode').value;
+          
+          try {
+            // Logs selected candidate attendance directly
+            let res = await eel.process_scan_py(cand.studentID, activeDate, eventName, currentMode, false, '')();
+            const consoleHUD = document.getElementById('scannerConsole');
+            const statusBanner = document.getElementById('statusBanner');
+            const statusDetail = document.getElementById('statusDetail');
+            
+            consoleHUD.className = 'scanner-console';
+            
+            if (res.status === 'success') {
+              statusBanner.textContent = 'Scan Verified';
+              statusDetail.textContent = `${res.student.lastName.toUpperCase()}, ${res.student.firstName} | ID: ${res.student.studentID}`;
+              consoleHUD.classList.add('scanning-success');
+              playBeepSound('success');
+              showToast(`Logged successfully: ${res.student.firstName} ${res.student.lastName}`);
+              await loadInitialData();
+            } else if (res.status === 'already_logged') {
+              statusBanner.textContent = 'Already Logged';
+              statusDetail.textContent = `${res.student.firstName} ${res.student.lastName} has already checked in.`;
+              consoleHUD.classList.add('scanning-warning');
+              playBeepSound('warning');
+              showToast(`${res.student.firstName} ${res.student.lastName} already checked in.`, 'warning');
+            }
+          } catch(e) {
+            console.error(e);
+          }
+          closeModal('selectionModal');
+        });
+
+        listContainer.appendChild(item);
+      });
+
+      playBeepSound('warning');
+      openModal('selectionModal');
+    }
+
+    // --- DIALOG MODAL ACTIONS: ID NOT FOUND ---
+    async function logAsUnregistered() {
+      const activeDate = document.getElementById('activeDate').value;
+      const eventName = document.getElementById('eventName').value.trim();
+      const currentMode = document.getElementById('scanMode').value;
+      
+      try {
+        let res = await eel.log_unregistered_py(pendingScanID, currentMode, activeDate, eventName)();
+        closeModal('notFoundModal');
+        
+        const consoleHUD = document.getElementById('scannerConsole');
+        consoleHUD.className = 'scanner-console scanning-success';
+        document.getElementById('statusBanner').textContent = 'UNREGISTERED LOGGED';
+        document.getElementById('statusDetail').textContent = `Barcode ${pendingScanID} logged as unregistered ID.`;
+        playBeepSound('success');
+        showToast(`Logged Unregistered ID: ${pendingScanID}`, 'warning');
+        
+        await loadInitialData();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function registerNewFromScan() {
+      closeModal('notFoundModal');
+      document.getElementById('regStudentID').value = pendingScanID;
+      document.getElementById('regFirstName').value = '';
+      document.getElementById('regLastName').value = '';
+      openModal('registerModal');
+    }
+
+    // Save Student Form Action
+    async function saveNewStudentForm() {
+      const sid = document.getElementById('regStudentID').value.trim();
+      const fn = document.getElementById('regFirstName').value.trim();
+      const ln = document.getElementById('regLastName').value.trim();
+      const yr = document.getElementById('regYearLevel').value;
+      const regTypeVal = document.getElementById('regType').value;
+
+      if (!sid || !fn || !ln) {
+        alert('All registration fields are required!');
+        return;
+      }
+
+      const activeDate = document.getElementById('activeDate').value;
+      const eventName = document.getElementById('eventName').value.trim();
+      const currentMode = document.getElementById('scanMode').value;
+
+      try {
+        let res = await eel.register_student_py(sid, fn, ln, yr, regTypeVal, currentMode, activeDate, eventName)();
+        
+        if (res.status === 'success') {
+          closeModal('registerModal');
+          const consoleHUD = document.getElementById('scannerConsole');
+          consoleHUD.className = 'scanner-console scanning-success';
+          document.getElementById('statusBanner').textContent = 'REGISTERED & LOGGED';
+          document.getElementById('statusDetail').textContent = `${ln.toUpperCase()}, ${fn} | ID: ${sid} registered.`;
+          playBeepSound('success');
+          showToast(`Registered & Logged: ${fn} ${ln}`);
+          await loadInitialData();
+        } else {
+          alert(res.message);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // --- MASS DELETION OF CHECKED LOGS ---
+    async function deleteCheckedLogs() {
+      const checkedBoxes = document.querySelectorAll('.row-checkbox.checked');
+      if (checkedBoxes.length === 0) {
+        showToast('Please check [☐] at least one row in table to delete.', 'warning');
+        return;
+      }
+
+      const confirmDelete = confirm(`Are you sure you want to delete ${checkedBoxes.length} selected record(s)?`);
+      if (!confirmDelete) return;
+
+      const activeDate = document.getElementById('activeDate').value;
+      const eventName = document.getElementById('eventName').value.trim();
+
+      let logsToDelete = [];
+      checkedBoxes.forEach(cb => {
+        const row = cb.closest('tr');
+        logsToDelete.push({
+          student_id: row.dataset.studentId,
+          mode: row.dataset.mode,
+          timestamp: row.dataset.timestamp
+        });
+      });
+
+      try {
+        let res = await eel.delete_logs_py(logsToDelete, activeDate, eventName)();
+        if (res.status === 'success') {
+          await loadInitialData();
+          playBeepSound('error');
+          showToast(`Deleted ${res.count} attendance record(s).`);
+        } else {
+          alert("Deletion error: " + res.message);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // --- WIPE ALL LOGS FOR ACTIVE EVENT SESSION ---
+    async function clearAllLogs() {
+      const activeDate = document.getElementById('activeDate').value;
+      const eventName = document.getElementById('eventName').value.trim();
+      
+      const confirmClear = confirm(`CRITICAL WARNING:\nAre you sure you want to wipe ALL attendance logs for event:\n"${eventName}" on Date: ${activeDate}?\n\nThis cannot be undone!`);
+      
+      if (!confirmClear) return;
+
+      try {
+        let res = await eel.clear_all_logs_py(activeDate, eventName)();
+        if (res.status === 'success') {
+          await loadInitialData();
+          const consoleHUD = document.getElementById('scannerConsole');
+          consoleHUD.className = 'scanner-console scanning-danger';
+          document.getElementById('statusBanner').textContent = 'DATABASE RESET';
+          document.getElementById('statusDetail').textContent = 'Logs wiped out for this active date event session.';
+          playBeepSound('error');
+          showToast('Wiped out all active session logs.', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // --- EXPORT MATRIX LOGS TO CSV DOWNLOAD ---
+    async function exportLogsCSV() {
+      const activeDate = document.getElementById('activeDate').value;
+      const eventName = document.getElementById('eventName').value.trim();
+
+      try {
+        let res = await eel.export_logs_csv_py(activeDate, eventName)();
+        if (res.status === 'success') {
+          showToast(res.message);
+        } else if (res.status === 'error') {
+          alert(res.message);
+        } else if (res.status === 'cancelled') {
+          showToast('Export cancelled by user.', 'warning');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // --- LOCK/UNLOCK PERIOD SYSTEM ---
+    async function checkPeriodLock() {
+      const activeDate = document.getElementById('activeDate').value;
+      const eventName = document.getElementById('eventName').value.trim();
+      const currentMode = document.getElementById('scanMode').value;
+      
+      if (!eventName) return;
+      
+      try {
+        const isLocked = await eel.check_period_lock_py(activeDate, eventName, currentMode)();
+        updateLockUI(isLocked);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    
+    function updateLockUI(isLocked) {
+      const btnLock = document.getElementById('btnLockPeriod');
+      if (!btnLock) return;
+      
+      const scanInput = document.getElementById('scanInput');
+      const scannerConsole = document.getElementById('scannerConsole');
+      const statusBanner = document.getElementById('statusBanner');
+      const statusDetail = document.getElementById('statusDetail');
+      
+      if (isLocked) {
+        btnLock.innerHTML = `<span>🔓 Unlock Current Period</span>`;
+        btnLock.className = "btn btn-danger";
+        if (scanInput) {
+          scanInput.disabled = true;
+          scanInput.placeholder = "PERIOD LOCKED/CLOSED";
+        }
+        if (scannerConsole) {
+          scannerConsole.classList.add('scanning-danger');
+        }
+        if (statusBanner) statusBanner.textContent = "🔒 PERIOD LOCKED";
+        if (statusDetail) statusDetail.textContent = "This scanning session is closed. Unlock it in the sidebar to scan.";
+      } else {
+        btnLock.innerHTML = `<span>🔒 Lock Current Period</span>`;
+        btnLock.className = "btn btn-secondary";
+        if (scanInput) {
+          scanInput.disabled = false;
+          scanInput.placeholder = "SCAN BARCODE / SEARCH NAME...";
+        }
+        if (scannerConsole) {
+          scannerConsole.classList.remove('scanning-danger');
+        }
+        if (statusBanner && statusBanner.textContent === "🔒 PERIOD LOCKED") {
+          statusBanner.textContent = "Waiting for Scan...";
+          statusDetail.textContent = "Please position barcode scanner or type student name/ID for manual search.";
+        }
+      }
+    }
+    
+    async function handleLockToggle() {
+      const activeDate = document.getElementById('activeDate').value;
+      const eventName = document.getElementById('eventName').value.trim();
+      const currentMode = document.getElementById('scanMode').value;
+      
+      if (!eventName) {
+        showToast('Please type an event name first.', 'warning');
+        return;
+      }
+      
+      const btnLock = document.getElementById('btnLockPeriod');
+      const isLocking = btnLock.innerHTML.includes('Lock Current Period');
+      
+      const actionText = isLocking ? 'LOCK and CLOSE' : 'RE-OPEN';
+      const confirmLock = confirm(`Are you sure you want to ${actionText} scanning for:\n\nPeriod: {${currentMode}}\nEvent: {${eventName}}?`);
+      if (!confirmLock) return;
+      
+      try {
+        const res = await eel.toggle_period_lock_py(activeDate, eventName, currentMode)();
+        if (res.status === 'success') {
+          updateLockUI(res.lock_status === 'locked');
+          showToast(`Period successfully ${res.lock_status}!`, res.lock_status === 'locked' ? 'error' : 'success');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
