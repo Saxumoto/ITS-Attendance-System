@@ -1,4 +1,15 @@
-# Ignore the virtual environment
+# Ignore Node modules & dependencies
+node_modules/
+package-lock.json
+
+# Ignore built releases & distribution binaries
+release/
+release_electron/
+dist/
+build/
+legacy_archive/
+
+# Ignore virtual environments
 venv/
 env/
 .env
@@ -14,5 +25,5 @@ rosters_and_archives/
 data/
 backups/
 
-# Ignore databases
+# Ignore local database files containing student records
 *.db

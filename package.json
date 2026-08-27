@@ -1,0 +1,35 @@
+{
+  "name": "its-attendance-system",
+  "version": "1.0.0",
+  "description": "ITS Attendance System Standalone Desktop Application",
+  "main": "main_electron.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "sqlite3": "^5.1.7",
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.its.attendancesystem",
+    "productName": "ITS Attendance System",
+    "directories": {
+      "output": "release_electron"
+    },
+    "win": {
+      "target": "portable",
+      "icon": "web/logo.ico"
+    },
+    "files": [
+      "main_electron.js",
+      "preload.js",
+      "server_api.js",
+      "web/**/*"
+    ]
+  }
+}
