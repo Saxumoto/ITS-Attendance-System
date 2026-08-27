@@ -2398,14 +2398,15 @@
     async function exportLogsCSV() {
       const activeDate = document.getElementById('activeDate').value;
       const eventName = document.getElementById('eventName').value.trim();
+      const currentMode = document.getElementById('scanMode').value;
 
       try {
-        let res = await eel.export_logs_csv_py(activeDate, eventName)();
-        if (res.status === 'success') {
+        let res = await eel._fetch('export_logs_csv_py', { date: activeDate, event: eventName, mode: currentMode, activeTab: activeTabPeriod });
+        if (res && res.status === 'success') {
           showToast(res.message);
-        } else if (res.status === 'error') {
+        } else if (res && res.status === 'error') {
           alert(res.message);
-        } else if (res.status === 'cancelled') {
+        } else if (res && res.status === 'cancelled') {
           showToast('Export cancelled by user.', 'warning');
         }
       } catch (err) {

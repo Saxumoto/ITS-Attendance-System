@@ -245,35 +245,42 @@ const api = {
         const { event, date, savePath } = params;
         const students = await queryDb("SELECT studentID, firstName, lastName, yearLevel, regType FROM studentData ORDER BY lastName ASC");
 
-        // Calculate Smart Period Tag
-        const loggedModesRows = await queryDb("SELECT DISTINCT mode FROM event_logs WHERE event_name=? AND manual_date=?", [event, date]);
-        const activeModes = new Set(loggedModesRows.map(r => r.mode));
-
+        // Calculate Smart Period Tag based on activeTab / mode or DB contents
         let periodTag = "Complete";
-        const hasMorningIn = activeModes.has("Morning Time IN");
-        const hasMorningOut = activeModes.has("Morning Time OUT");
-        const hasAfternoonIn = activeModes.has("Afternoon Time IN");
-        const hasAfternoonOut = activeModes.has("Afternoon Time OUT");
-
-        const hasMorning = hasMorningIn || hasMorningOut;
-        const hasAfternoon = hasAfternoonIn || hasAfternoonOut;
-
-        if (hasMorning && hasAfternoon) {
-            periodTag = "Complete";
-        } else if (hasMorningIn && hasMorningOut) {
-            periodTag = "Morning_IN_and_OUT";
-        } else if (hasAfternoonIn && hasAfternoonOut) {
-            periodTag = "Afternoon_IN_and_OUT";
-        } else if (hasMorningIn) {
-            periodTag = "Morning_Time_IN";
-        } else if (hasMorningOut) {
-            periodTag = "Morning_Time_OUT";
-        } else if (hasAfternoonIn) {
-            periodTag = "Afternoon_Time_IN";
-        } else if (hasAfternoonOut) {
-            periodTag = "Afternoon_Time_OUT";
+        
+        if (params.activeTab && params.activeTab !== 'ALL') {
+            periodTag = params.activeTab.replace(/\s+/g, '_');
+        } else if (params.mode && !params.activeTab) {
+            periodTag = params.mode.replace(/\s+/g, '_');
         } else {
-            periodTag = "Complete";
+            const loggedModesRows = await queryDb("SELECT DISTINCT mode FROM event_logs WHERE event_name=? AND manual_date=?", [event, date]);
+            const activeModes = new Set(loggedModesRows.map(r => r.mode));
+
+            const hasMorningIn = activeModes.has("Morning Time IN");
+            const hasMorningOut = activeModes.has("Morning Time OUT");
+            const hasAfternoonIn = activeModes.has("Afternoon Time IN");
+            const hasAfternoonOut = activeModes.has("Afternoon Time OUT");
+
+            const hasMorning = hasMorningIn || hasMorningOut;
+            const hasAfternoon = hasAfternoonIn || hasAfternoonOut;
+
+            if (hasMorning && hasAfternoon) {
+                periodTag = "Complete";
+            } else if (hasMorningIn && hasMorningOut) {
+                periodTag = "Morning_IN_and_OUT";
+            } else if (hasAfternoonIn && hasAfternoonOut) {
+                periodTag = "Afternoon_IN_and_OUT";
+            } else if (hasMorningIn) {
+                periodTag = "Morning_Time_IN";
+            } else if (hasMorningOut) {
+                periodTag = "Morning_Time_OUT";
+            } else if (hasAfternoonIn) {
+                periodTag = "Afternoon_Time_IN";
+            } else if (hasAfternoonOut) {
+                periodTag = "Afternoon_Time_OUT";
+            } else {
+                periodTag = "Complete";
+            }
         }
 
         const cleanEvt = (event || 'Event').replace(/[^a-zA-Z0-9]/g, '_');

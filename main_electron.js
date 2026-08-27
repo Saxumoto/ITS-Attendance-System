@@ -44,7 +44,7 @@ ipcMain.handle('clear_logs_py', async (event, params) => api.clearLogs(params));
 
 ipcMain.handle('export_logs_csv_py', async (event, params) => {
     try {
-        const tempRes = await api.exportExcel({ event: params.event, date: params.date, savePath: null });
+        const tempRes = await api.exportExcel({ event: params.event, date: params.date, mode: params.mode, activeTab: params.activeTab, savePath: null });
         const defaultName = tempRes.default_filename || 'Attendance_Report.xlsx';
 
         const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
@@ -59,7 +59,7 @@ ipcMain.handle('export_logs_csv_py', async (event, params) => {
             return { status: "cancelled" };
         }
 
-        const res = await api.exportExcel({ event: params.event, date: params.date, savePath: filePath });
+        const res = await api.exportExcel({ event: params.event, date: params.date, mode: params.mode, activeTab: params.activeTab, savePath: filePath });
         return { status: "success", message: `Export saved successfully!\nSaved to: ${filePath}`, file_path: filePath };
     } catch (err) {
         return { status: "error", message: `Export failed: ${err.message}` };
