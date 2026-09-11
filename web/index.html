@@ -1863,13 +1863,32 @@
         localStorage.setItem('its_cutoffTime', cutoffTimeInput.value);
       });
 
-      // Live Time clock updater
+      // Live Time & Date clock updater (Synchronized 100%)
+      let lastClockDateStr = '';
       function updateLiveClock() {
         const liveTimeLabel = document.getElementById('liveTime');
+        const now = new Date();
+        
         if (liveTimeLabel) {
-          const now = new Date();
-          liveTimeLabel.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const dateFormatted = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+          const timeFormatted = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          liveTimeLabel.textContent = `${dateFormatted} • ${timeFormatted}`;
         }
+
+        // Auto-sync active date picker at midnight or initial load if unset
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        if (lastClockDateStr && lastClockDateStr !== todayStr) {
+          const datePicker = document.getElementById('activeDate');
+          if (datePicker && !localStorage.getItem('its_activeDate')) {
+            datePicker.value = todayStr;
+            loadInitialData();
+          }
+        }
+        lastClockDateStr = todayStr;
       }
       updateLiveClock();
       setInterval(updateLiveClock, 1000);
