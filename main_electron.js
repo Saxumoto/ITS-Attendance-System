@@ -39,6 +39,7 @@ ipcMain.handle('process_scan_py', async (event, params) => api.processScan(param
 ipcMain.handle('check_period_lock_py', async (event, params) => api.checkPeriodLock(params));
 ipcMain.handle('toggle_period_lock_py', async (event, params) => api.togglePeriodLock(params));
 ipcMain.handle('register_student_py', async (event, params) => api.registerStudent(params));
+ipcMain.handle('link_barcode_id_py', async (event, params) => api.linkBarcodeID(params));
 ipcMain.handle('delete_log_py', async (event, params) => api.deleteLog(params));
 ipcMain.handle('clear_logs_py', async (event, params) => api.clearLogs(params));
 

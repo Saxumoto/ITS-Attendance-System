@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     checkPeriodLock: (params) => ipcRenderer.invoke('check_period_lock_py', params),
     togglePeriodLock: (params) => ipcRenderer.invoke('toggle_period_lock_py', params),
     registerStudent: (params) => ipcRenderer.invoke('register_student_py', params),
+    linkBarcodeID: (params) => ipcRenderer.invoke('link_barcode_id_py', params),
     deleteLog: (params) => ipcRenderer.invoke('delete_log_py', params),
     clearLogs: (params) => ipcRenderer.invoke('clear_logs_py', params),
     exportExcel: (params) => ipcRenderer.invoke('export_logs_csv_py', params)

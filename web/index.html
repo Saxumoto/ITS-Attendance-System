@@ -1530,6 +1530,45 @@
     </div>
   </div>
 
+  <!-- Modal 6: Link Barcode ID Card Modal -->
+  <div class="modal-overlay" id="linkBarcodeModal">
+    <div class="modal-window" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/><line x1="13" y1="8" x2="13" y2="16"/><line x1="17" y1="8" x2="17" y2="16"/></svg>
+          Link Student Barcode ID Card
+        </div>
+        <button class="modal-close" onclick="closeModal('linkBarcodeModal')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 8px;">
+          <div id="linkStudentName" style="font-weight: 700; color: var(--text-main); font-size: 1.05rem;">Student Name</div>
+          <div id="linkStudentDetail" style="font-size: 0.8rem; color: var(--text-muted);">Year Level • Current Temp ID</div>
+        </div>
+
+        <div class="form-group">
+          <label class="card-label" for="barcodeInput">Scan or Manually Input Barcode ID Number</label>
+          <div style="position: relative;">
+            <input type="text" id="barcodeInput" class="styled-input" placeholder="SCAN BARCODE / TYPE ID NUMBER..." style="font-size: 1.1rem; letter-spacing: 1px; font-weight: 700; padding-right: 40px;" autocomplete="off">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: 12px; top: 12px; color: var(--primary);"><path d="M4 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+            💡 <strong>USB Scanner / Manual Typing:</strong> Position USB Barcode Scanner at ID card to auto-capture, OR manually type ID number using keyboard.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap;">
+        <button class="btn btn-secondary" onclick="skipLinkAndLogTemp()" style="font-size: 0.8rem;">Log Without Linking</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" onclick="closeModal('linkBarcodeModal')">Cancel</button>
+          <button class="btn btn-primary" id="btnConfirmLinkBarcode" style="background: #10b981; border-color: #10b981;">Link & Log Check-in</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal 6: Retrieve Past Event Logs -->
   <div class="modal-overlay" id="historyModal">
     <div class="modal-window" style="max-width: 550px;">
@@ -1580,6 +1619,7 @@
             if (endpoint === 'check_period_lock_py') return await window.electronAPI.checkPeriodLock(data);
             if (endpoint === 'toggle_period_lock_py') return await window.electronAPI.togglePeriodLock(data);
             if (endpoint === 'register_student_py') return await window.electronAPI.registerStudent(data);
+            if (endpoint === 'link_barcode_id_py') return await window.electronAPI.linkBarcodeID(data);
             if (endpoint === 'delete_log_py' || endpoint === 'delete_logs_py') return await window.electronAPI.deleteLog(data);
             if (endpoint === 'clear_logs_py' || endpoint === 'clear_all_logs_py') return await window.electronAPI.clearLogs(data);
             if (endpoint === 'export_logs_csv_py') return await window.electronAPI.exportExcel(data);
@@ -2175,6 +2215,11 @@
       listContainer.innerHTML = '';
 
       candidates.forEach(cand => {
+        const isPending = cand.regType === 'PENDING_ID' || String(cand.studentID).startsWith('TEMP-');
+        const badgeHTML = isPending 
+          ? `<span class="badge" style="background:#f59e0b; color:#fff; font-weight:700;">⚠️ PENDING BARCODE</span>`
+          : `<span class="badge badge-reg">${cand.regType || 'EXISTING'}</span>`;
+
         const item = document.createElement('div');
         item.className = 'match-item';
         item.innerHTML = `
@@ -2182,41 +2227,23 @@
             <div class="match-name">${cand.lastName}, ${cand.firstName}</div>
             <div class="match-sub">ID: ${cand.studentID} • ${cand.yearLevel}</div>
           </div>
-          <span class="badge badge-reg">${cand.regType || 'EXISTING'}</span>
+          ${badgeHTML}
         `;
 
         item.addEventListener('click', async () => {
+          closeModal('selectionModal');
+
           const activeDate = document.getElementById('activeDate').value;
           const eventName = document.getElementById('eventName').value.trim();
           const currentMode = document.getElementById('scanMode').value;
-          
-          try {
-            // Logs selected candidate attendance directly
-            let res = await eel.process_scan_py(cand.studentID, activeDate, eventName, currentMode, false, '')();
-            const consoleHUD = document.getElementById('scannerConsole');
-            const statusBanner = document.getElementById('statusBanner');
-            const statusDetail = document.getElementById('statusDetail');
-            
-            consoleHUD.className = 'scanner-console';
-            
-            if (res.status === 'success') {
-              statusBanner.textContent = 'Scan Verified';
-              statusDetail.textContent = `${res.student.lastName.toUpperCase()}, ${res.student.firstName} | ID: ${res.student.studentID}`;
-              consoleHUD.classList.add('scanning-success');
-              playBeepSound('success');
-              showToast(`Logged successfully: ${res.student.firstName} ${res.student.lastName}`);
-              await loadInitialData();
-            } else if (res.status === 'already_logged') {
-              statusBanner.textContent = 'Already Logged';
-              statusDetail.textContent = `${res.student.firstName} ${res.student.lastName} has already checked in.`;
-              consoleHUD.classList.add('scanning-warning');
-              playBeepSound('warning');
-              showToast(`${res.student.firstName} ${res.student.lastName} already checked in.`, 'warning');
-            }
-          } catch(e) {
-            console.error(e);
+          let targetID = cand.studentID;
+
+          if (isPending) {
+            openLinkBarcodeModal(cand);
+            return;
           }
-          closeModal('selectionModal');
+
+          await executeStudentLog(cand.studentID);
         });
 
         listContainer.appendChild(item);
@@ -2224,6 +2251,98 @@
 
       playBeepSound('warning');
       openModal('selectionModal');
+    }
+
+    let activeCandidateForLinking = null;
+
+    function openLinkBarcodeModal(candidate) {
+      activeCandidateForLinking = candidate;
+      document.getElementById('linkStudentName').textContent = `${candidate.lastName.toUpperCase()}, ${candidate.firstName}`;
+      document.getElementById('linkStudentDetail').textContent = `${candidate.yearLevel} • Current Temp ID: ${candidate.studentID}`;
+      
+      const barcodeInput = document.getElementById('barcodeInput');
+      barcodeInput.value = '';
+      openModal('linkBarcodeModal');
+      
+      setTimeout(() => {
+        barcodeInput.focus();
+      }, 200);
+    }
+
+    document.getElementById('barcodeInput')?.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        await confirmLinkAndLog();
+      }
+    });
+
+    document.getElementById('btnConfirmLinkBarcode')?.addEventListener('click', async () => {
+      await confirmLinkAndLog();
+    });
+
+    async function confirmLinkAndLog() {
+      if (!activeCandidateForLinking) return;
+      const scannedCode = document.getElementById('barcodeInput').value.trim();
+      
+      if (!scannedCode) {
+        showToast('Please scan a barcode or type an ID number!', 'warning');
+        playBeepSound('warning');
+        return;
+      }
+
+      try {
+        const linkRes = await eel._fetch('link_barcode_id_py', { current_id: activeCandidateForLinking.studentID, new_barcode_id: scannedCode });
+        if (linkRes && linkRes.status === 'success') {
+          showToast(`Linked Barcode ${scannedCode} to ${activeCandidateForLinking.firstName} ${activeCandidateForLinking.lastName}!`, 'success');
+          const targetID = scannedCode;
+          closeModal('linkBarcodeModal');
+          await executeStudentLog(targetID);
+        } else if (linkRes && linkRes.status === 'error') {
+          showToast(linkRes.message, 'error');
+          playBeepSound('error');
+        }
+      } catch (err) {
+        console.error("Linking error:", err);
+      }
+    }
+
+    async function skipLinkAndLogTemp() {
+      if (!activeCandidateForLinking) return;
+      const targetID = activeCandidateForLinking.studentID;
+      closeModal('linkBarcodeModal');
+      await executeStudentLog(targetID);
+    }
+
+    async function executeStudentLog(studentID) {
+      const activeDate = document.getElementById('activeDate').value;
+      const eventName = document.getElementById('eventName').value.trim();
+      const currentMode = document.getElementById('scanMode').value;
+
+      try {
+        let res = await eel._fetch('process_scan_py', { query: studentID, date: activeDate, event: eventName, mode: currentMode });
+        const consoleHUD = document.getElementById('scannerConsole');
+        const statusBanner = document.getElementById('statusBanner');
+        const statusDetail = document.getElementById('statusDetail');
+        
+        consoleHUD.className = 'scanner-console';
+        
+        if (res.status === 'success') {
+          statusBanner.textContent = 'Scan Verified';
+          statusDetail.textContent = `${res.student.lastName.toUpperCase()}, ${res.student.firstName} | ID: ${res.student.studentID}`;
+          consoleHUD.classList.add('scanning-success');
+          playBeepSound('success');
+          showToast(`Logged successfully: ${res.student.firstName} ${res.student.lastName}`);
+          await loadInitialData();
+        } else if (res.status === 'already_logged') {
+          statusBanner.textContent = 'Already Logged';
+          statusDetail.textContent = `${res.student.firstName} ${res.student.lastName} has already checked in.`;
+          consoleHUD.classList.add('scanning-warning');
+          playBeepSound('warning');
+          showToast(`${res.student.firstName} ${res.student.lastName} already checked in.`, 'warning');
+        }
+      } catch(e) {
+        console.error(e);
+      }
     }
 
     // --- DIALOG MODAL ACTIONS: ID NOT FOUND ---

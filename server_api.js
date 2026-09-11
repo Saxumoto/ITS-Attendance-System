@@ -217,6 +217,21 @@ const api = {
         return { status: "success", student_name: `${first_name} ${last_name}` };
     },
 
+    async linkBarcodeID(params) {
+        const { current_id, new_barcode_id } = params;
+        if (!current_id || !new_barcode_id) return { status: "error", message: "Missing ID information." };
+
+        const existing = await queryDb("SELECT studentID, firstName, lastName FROM studentData WHERE studentID=?", [new_barcode_id]);
+        if (existing.length > 0) {
+            return { status: "error", message: `Barcode ID '${new_barcode_id}' is already assigned to ${existing[0].lastName}, ${existing[0].firstName}!` };
+        }
+
+        await runDb("UPDATE studentData SET studentID=?, regType='EXISTING' WHERE studentID=?", [new_barcode_id, current_id]);
+        await runDb("UPDATE event_logs SET student_id=? WHERE student_id=?", [new_barcode_id, current_id]);
+
+        return { status: "success", new_id: new_barcode_id };
+    },
+
     async deleteLog(params) {
         let count = 0;
         if (Array.isArray(params.logs)) {

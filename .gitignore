@@ -18,12 +18,14 @@ env/
 __pycache__/
 *.pyc
 
-# Ignore Excel/CSV reports and roster raw files
+# Ignore Excel/CSV reports, raw PDFs, and roster files
 *.csv
 *.xlsx
+*.pdf
 rosters_and_archives/
 data/
 backups/
+UPDATED MASTERLIST/
 
 # Ignore local database files containing student records
 *.db
