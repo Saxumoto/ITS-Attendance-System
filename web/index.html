@@ -2111,6 +2111,11 @@
           if (regType === 'NEW') regTypeClass = 'new';
           else if (regType === 'NOT FOUND') regTypeClass = 'not-found';
 
+          const isPending = regType === 'PENDING_ID' || String(log.studentID).startsWith('TEMP-');
+          const regBadgeHTML = isPending
+            ? `<span class="badge badge-link-pending" style="background:#f59e0b; color:#fff; font-weight:700; cursor:pointer;" title="Click to Link Physical Barcode ID">⚠️ LINK BARCODE</span>`
+            : `<span class="badge badge-reg ${regTypeClass}">${regType}</span>`;
+
           const row = document.createElement('tr');
           row.dataset.studentId = log.studentID;
           row.dataset.mode = log.mode;
@@ -2126,9 +2131,19 @@
             <td><span class="badge badge-id">${log.studentID}</span></td>
             <td><strong>${name}</strong></td>
             <td><span class="badge badge-year">${year}</span></td>
-            <td><span class="badge badge-reg ${regTypeClass}">${regType}</span></td>
+            <td>${regBadgeHTML}</td>
             <td><span class="badge badge-status ${modeClass}">${log.mode}</span></td>
           `;
+
+          if (isPending && student) {
+            row.style.cursor = 'pointer';
+            const pendingBadge = row.querySelector('.badge-link-pending');
+            const handleLinkClick = (e) => {
+              e.stopPropagation();
+              openLinkBarcodeModal(student);
+            };
+            pendingBadge?.addEventListener('click', handleLinkClick);
+          }
 
           const rowCheckbox = row.querySelector('.row-checkbox');
           row.querySelector('td:not(.checkbox-cell)').parentNode.addEventListener('click', (e) => {

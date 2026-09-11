@@ -158,9 +158,17 @@ const api = {
             }
         } else {
             const queryStr = `%${query}%`;
-            const candidates = await queryDb("SELECT studentID, firstName, lastName, yearLevel FROM studentData WHERE lastName LIKE ? OR firstName LIKE ?", [queryStr, queryStr]);
+            const candidates = await queryDb("SELECT studentID, firstName, lastName, yearLevel, regType FROM studentData WHERE lastName LIKE ? OR firstName LIKE ?", [queryStr, queryStr]);
 
-            if (candidates.length === 1) {
+            if (candidates.length > 0) {
+                // If 1 or more candidates are found, check if any has a PENDING_ID or if there are multiple matches
+                const hasPendingID = candidates.some(c => c.regType === 'PENDING_ID' || String(c.studentID).startsWith('TEMP-'));
+
+                if (candidates.length > 1 || hasPendingID) {
+                    return { status: "multiple_matches", candidates: candidates, query: query };
+                }
+
+                // Single candidate with verified barcode ID
                 const cand = candidates[0];
                 const existing = await queryDb("SELECT id FROM event_logs WHERE student_id=? AND mode=? AND manual_date=? AND event_name=?", [cand.studentID, mode, date, event]);
 
@@ -170,8 +178,6 @@ const api = {
                     await runDb("INSERT INTO event_logs (student_id, mode, timestamp, event_name, manual_date) VALUES (?,?,?,?,?)", [cand.studentID, mode, timeStr, event, date]);
                     return { status: "success", student: { studentID: cand.studentID, firstName: cand.firstName, lastName: cand.lastName, yearLevel: cand.yearLevel } };
                 }
-            } else if (candidates.length > 1) {
-                return { status: "multiple_matches", candidates: candidates, query: query };
             } else {
                 const isNumeric = /^\d+$/.test(query);
                 if (isNumeric) {
