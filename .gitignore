@@ -26,6 +26,7 @@ rosters_and_archives/
 data/
 backups/
 UPDATED MASTERLIST/
+UNIFIED_FILES/
 
 # Ignore local database files containing student records
 *.db
