@@ -228,7 +228,7 @@ const api = {
         if (!current_id || !new_barcode_id) return { status: "error", message: "Missing ID information." };
 
         const existing = await queryDb("SELECT studentID, firstName, lastName FROM studentData WHERE studentID=?", [new_barcode_id]);
-        if (existing.length > 0) {
+        if (existing.length > 0 && String(existing[0].studentID) !== String(current_id)) {
             return { status: "error", message: `Barcode ID '${new_barcode_id}' is already assigned to ${existing[0].lastName}, ${existing[0].firstName}!` };
         }
 
