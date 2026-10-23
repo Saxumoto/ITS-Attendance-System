@@ -138,16 +138,26 @@ const api = {
     },
 
     async processScan(params) {
-        const { query, date, event, mode } = params;
+        let { query, date, event, mode } = params;
         if (!query) return { status: "error", message: "Empty query" };
+        const cleanQuery = query.toString().trim();
+        if (!cleanQuery) return { status: "error", message: "Empty query" };
 
         const now = new Date();
         const timeStr = `${date} ${now.toTimeString().split(' ')[0]}`;
 
-        const exactMatch = await queryDb("SELECT studentID, firstName, lastName, yearLevel FROM studentData WHERE studentID=?", [query]);
+        // 1. Direct Exact Match on studentID
+        const exactMatch = await queryDb("SELECT studentID, firstName, lastName, yearLevel, regType FROM studentData WHERE studentID=?", [cleanQuery]);
 
         if (exactMatch.length > 0) {
             const student = exactMatch[0];
+            const isPending = student.regType === 'PENDING_ID' || String(student.studentID).startsWith('TEMP-');
+
+            // If the exact match is still a temporary placeholder ID, route to link barcode
+            if (isPending) {
+                return { status: "multiple_matches", candidates: [student], query: cleanQuery };
+            }
+
             const existing = await queryDb("SELECT id FROM event_logs WHERE student_id=? AND mode=? AND manual_date=? AND event_name=?", [student.studentID, mode, date, event]);
 
             if (existing.length > 0) {
@@ -157,15 +167,15 @@ const api = {
                 return { status: "success", student: { studentID: student.studentID, firstName: student.firstName, lastName: student.lastName, yearLevel: student.yearLevel } };
             }
         } else {
-            const queryStr = `%${query}%`;
-            const candidates = await queryDb("SELECT studentID, firstName, lastName, yearLevel, regType FROM studentData WHERE lastName LIKE ? OR firstName LIKE ?", [queryStr, queryStr]);
+            const queryStr = `%${cleanQuery}%`;
+            // Search by Name OR Student ID (supports partial/updated barcode lookups)
+            const candidates = await queryDb("SELECT studentID, firstName, lastName, yearLevel, regType FROM studentData WHERE lastName LIKE ? OR firstName LIKE ? OR studentID LIKE ?", [queryStr, queryStr, queryStr]);
 
             if (candidates.length > 0) {
-                // If 1 or more candidates are found, check if any has a PENDING_ID or if there are multiple matches
                 const hasPendingID = candidates.some(c => c.regType === 'PENDING_ID' || String(c.studentID).startsWith('TEMP-'));
 
                 if (candidates.length > 1 || hasPendingID) {
-                    return { status: "multiple_matches", candidates: candidates, query: query };
+                    return { status: "multiple_matches", candidates: candidates, query: cleanQuery };
                 }
 
                 // Single candidate with verified barcode ID
@@ -179,11 +189,11 @@ const api = {
                     return { status: "success", student: { studentID: cand.studentID, firstName: cand.firstName, lastName: cand.lastName, yearLevel: cand.yearLevel } };
                 }
             } else {
-                const isNumeric = /^\d+$/.test(query);
+                const isNumeric = /^\d+$/.test(cleanQuery);
                 if (isNumeric) {
-                    return { status: "id_not_found", query: query };
+                    return { status: "id_not_found", query: cleanQuery };
                 } else {
-                    return { status: "not_found", query: query };
+                    return { status: "not_found", query: cleanQuery };
                 }
             }
         }

@@ -1340,7 +1340,10 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           Live Log Dashboard
         </h2>
-        <div class="card-label" style="font-size: 0.7rem; color: var(--text-muted);">Click [☐] to check row for mass-delete</div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <input type="text" id="liveLogFilterInput" class="styled-input" placeholder="🔍 Quick filter logs by name or ID..." style="font-size: 0.8rem; padding: 4px 10px; width: 230px; height: 30px;">
+          <div class="card-label" style="font-size: 0.7rem; color: var(--text-muted);">Click [☐] to check row for mass-delete</div>
+        </div>
       </div>
 
       <!-- PERIOD FILTER FOLDER TABS -->
@@ -1600,16 +1603,16 @@
             <option value="3rd Year">3rd Year</option>
             <option value="4th Year">4th Year</option>
           </select>
-          <select id="masterlistStatusFilter" class="styled-select" style="width: auto; min-width: 155px;">
-            <option value="ALL">All Statuses</option>
-            <option value="PENDING">⚠️ Pending Barcode</option>
-            <option value="LINKED">✅ Linked Barcode</option>
+          <select id="masterlistStatusFilter" class="styled-select" style="width: auto; min-width: 175px;">
+            <option value="ALL">All Students</option>
+            <option value="PENDING">⚠️ Needs Barcode Only (100)</option>
+            <option value="LINKED">✅ Has Barcode (906)</option>
           </select>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); padding: 0 4px;">
           <span id="masterlistSummaryCount">Showing 0 of 0 students</span>
-          <span>Tip: Click <strong>🔗 Link Barcode</strong> to scan or update card ID</span>
+          <span>Tip: Click <strong>⚠️ Link Barcode</strong> to assign ID card, or <strong>✏️ Edit</strong> to change</span>
         </div>
 
         <div style="max-height: 420px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
@@ -1989,6 +1992,7 @@
       document.getElementById('btnOpenMasterlist')?.addEventListener('click', openMasterlistModal);
       document.getElementById('btnRetrieveHistory')?.addEventListener('click', openHistoryModal);
       document.getElementById('btnRegister')?.addEventListener('click', () => openModal('registerModal'));
+      document.getElementById('liveLogFilterInput')?.addEventListener('input', refreshUI);
       document.getElementById('masterlistSearch')?.addEventListener('input', renderMasterlist);
       document.getElementById('masterlistYearFilter')?.addEventListener('change', renderMasterlist);
       document.getElementById('masterlistStatusFilter')?.addEventListener('change', renderMasterlist);
@@ -2129,6 +2133,17 @@
         filteredLogs = eventLogs.filter(l => l.mode === activeTabPeriod);
       }
 
+      // Quick filter logs by name or ID if typed in dashboard filter
+      const tableFilterVal = (document.getElementById('liveLogFilterInput')?.value || '').toLowerCase().trim();
+      if (tableFilterVal) {
+        filteredLogs = filteredLogs.filter(l => {
+          let s = students.find(st => st.studentID === l.studentID);
+          const sName = s ? `${s.lastName} ${s.firstName}`.toLowerCase() : '';
+          const sID = String(l.studentID || '').toLowerCase();
+          return sName.includes(tableFilterVal) || sID.includes(tableFilterVal);
+        });
+      }
+
       if (filteredLogs.length === 0) {
         document.getElementById('emptyState').style.display = 'flex';
       } else {
@@ -2204,9 +2219,10 @@
             <td>${regBadgeHTML}</td>
             <td><span class="badge badge-status ${modeClass}">${log.mode}</span></td>
             <td style="text-align: center;">
-              <button class="btn btn-secondary btn-table-link" style="padding: 2px 8px; font-size: 0.72rem; height: 26px; border-color: ${isPending ? '#f59e0b' : 'var(--border-color)'}; color: ${isPending ? '#f59e0b' : 'inherit'};" title="Link or re-assign barcode card for this student">
-                ${isPending ? '⚠️ Link' : '🔗 Re-link'}
-              </button>
+              ${isPending 
+                ? `<button class="btn btn-warning-sm btn-table-link" style="padding: 2px 8px; font-size: 0.72rem; height: 25px; background: #f59e0b; border-color: #f59e0b; color: #fff; font-weight: 600;" title="Assign physical barcode ID card">⚠️ Link Barcode</button>`
+                : `<span style="font-size: 0.75rem; color: #10b981; font-weight: 600;">✓ Linked</span><button class="btn btn-secondary btn-table-link" style="padding: 1px 6px; font-size: 0.68rem; height: 22px; opacity: 0.65; margin-left: 5px;" title="Optionally change or re-assign card ID">✏️ Edit</button>`
+              }
             </td>
           `;
 
@@ -2516,9 +2532,10 @@
           <td style="padding: 8px 12px;"><span class="badge badge-year">${s.yearLevel}</span></td>
           <td style="padding: 8px 12px;">${badgeHTML}</td>
           <td style="padding: 8px 12px; text-align: center;">
-            <button class="btn btn-primary btn-ml-link" style="padding: 3px 8px; font-size: 0.72rem; height: 26px; ${isPending ? 'background:#f59e0b; border-color:#f59e0b;' : ''}">
-              ${isPending ? '⚠️ Link Barcode' : '🔗 Link Barcode'}
-            </button>
+            ${isPending 
+              ? `<button class="btn btn-primary btn-ml-link" style="padding: 3px 8px; font-size: 0.72rem; height: 26px; background:#f59e0b; border-color:#f59e0b; font-weight: 600;">⚠️ Link Barcode</button>`
+              : `<span style="font-size: 0.75rem; color: #10b981; font-weight: 600;">✓ Linked</span><button class="btn btn-secondary btn-ml-link" style="padding: 2px 7px; font-size: 0.7rem; height: 24px; opacity: 0.7; margin-left: 6px;" title="Optionally change or re-assign card ID">✏️ Edit</button>`
+            }
           </td>
         `;
 
